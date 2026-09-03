@@ -1,0 +1,48 @@
+ACME Office Supplies B.V.
+Keizersgracht 123
+1015 CJ Amsterdam
+Netherlands
+
+KVK: 12345678
+VAT Number: NL123456789B01
+
+---
+
+INVOICE
+
+Invoice Number: INV-2026-00142
+Invoice Date: 02 September 2026
+Due Date: 02 October 2026
+
+Bill To:
+
+Example Company B.V.
+Herengracht 456
+1016 CA Amsterdam
+Netherlands
+
+---
+
+DESCRIPTION                     QUANTITY       PRICE
+
+Office Chair                        2         €299.99
+Mechanical Keyboard                 3         €129.50
+USB-C Docking Station               2         €189.00
+
+---
+
+Subtotal:                                      €1,176.48
+VAT (21%):                                       €247.06
+
+TOTAL:                                         €1,423.54 EUR
+
+---
+
+Please transfer payment within 30 days.
+
+Bank: Example Bank
+IBAN: NL00BANK0123456789
+
+Thank you for your business.
+
+ACME Office Supplies B.V.
