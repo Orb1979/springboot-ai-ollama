@@ -76,3 +76,35 @@ POST /ai/invoices/analyze
 
 ```
 
+
+```
+Unstructered data to InvoiceResponse structure/schema
+
+The AI maps it with
+- The natural-language prompt
+- The InvoiceResponse structure/schema
+- The model's language understanding
+
+so e.g these all will be mapped to InvoiceResponse invoiceNumber
+- Invoice number: 12345
+- Inv. No. 12345
+- Reference: 12345
+- Factuurnummer: 12345
+
+.entity(InvoiceResponse.class) >> "Spring AI, please ask the AI for a structured response that can be represented
+ by this Java type, and deserialize the resulting structured data into this type."
+
+                LLM
+                  │
+                  │ understands invoice
+                  ▼
+Unstructured text ──────► Structured JSON
+                              │
+                              │
+                              ▼
+                     Spring AI / Jackson
+                              │
+                              ▼
+                     InvoiceResponse
+
+```
