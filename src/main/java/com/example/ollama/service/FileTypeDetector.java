@@ -1,6 +1,5 @@
 package com.example.ollama.service;
 
-//import org.apache.pdfbox.util.filetypedetector.FileType;
 import com.example.ollama.domain.FileType;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
@@ -54,6 +53,25 @@ public class FileTypeDetector {
 				       || isGif(bytes)
 				       || isBmp(bytes)
 				       || isWebp(bytes);
+	}
+
+	public String detectImageMimeType(byte[] bytes) {
+		if (isPng(bytes)) {
+			return "image/png";
+		}
+		if (isJpeg(bytes)) {
+			return "image/jpeg";
+		}
+		if (isGif(bytes)) {
+			return "image/gif";
+		}
+		if (isBmp(bytes)) {
+			return "image/bmp";
+		}
+		if (isWebp(bytes)) {
+			return "image/webp";
+		}
+		throw new IllegalArgumentException("Bytes do not match a recognized image format");
 	}
 
 	private boolean isPng(byte[] bytes) {
