@@ -1,0 +1,24 @@
+INVOICE
+
+Acme Corp
+123 Industrial Way
+Springfield, IL 62704
+
+Invoice Number: INV-001
+Invoice Date: 2024-03-12
+Due Date: 2024-04-11
+
+Bill To:
+Example Customer BV
+456 Client Street
+Amsterdam, Netherlands
+
+Description                Qty      Unit Price     Total
+------------------------------------------------------------
+Consulting services         10        9.99          99.90
+
+------------------------------------------------------------
+Total Due: EUR 99.90
+
+Payment Terms: Net 30
+Thank you for your business.
