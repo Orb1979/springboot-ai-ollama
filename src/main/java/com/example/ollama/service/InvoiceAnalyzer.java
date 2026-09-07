@@ -24,22 +24,24 @@ public class InvoiceAnalyzer {
 	private final InvoiceRepository invoiceRepository;
 
 	private static final String invoicePrompt = """
-        Extract the following information from this invoice:
-
-        - supplier
-        - invoice number
-        - total amount payable
-        - currency
-
-        Rules:
-        - Use only information present in the invoice.
-        - Do not invent missing information.
-        - Use the final total amount, not the subtotal or VAT amount.
-        - Return the result in the requested structured format.
-
-        Invoice:
-        %s
-        """;
+			Extract the following information from this invoice:
+			
+			- supplier: the company or person issuing the invoice
+			- invoiceNumber: the unique invoice identifier
+			- amount: the final total amount that the customer must pay
+			- currency: the currency of the final payable amount
+			
+			Rules:
+			- Use only information present in the invoice.
+			- Do not invent missing information.
+			- Do not calculate values unless explicitly required.
+			- Use the final total payable amount.
+			- Do not use subtotal, VAT, or amount already paid.
+			- If a value cannot be determined, return null.
+			
+			Invoice:
+			%s
+			""";
 
 	public InvoiceAnalyzer(
 			ChatClient.Builder chatClientBuilder,

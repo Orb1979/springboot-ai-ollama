@@ -33,18 +33,6 @@ public class InvoiceController {
 					"Failed to analyze text invoice, for file %s".formatted(file.getOriginalFilename()), e);
 		}
 	}
-
-//	// curl -X POST http://localhost:8080/ai/invoices/analyze-pdf -F "file=@example-invoice.pdf"
-//	@PostMapping("/analyze-pdf")
-//	public InvoiceResponse analyzePdf(@RequestParam("file") MultipartFile file)  {
-//		log.info("Analyzing invoice (pdf): {}", file.getOriginalFilename());
-//		try {
-//			return invoiceAnalyzeService.analyzeInvoice(file);
-//		} catch (IOException e) {
-//			throw new InvoiceAnalyzeException(
-//					"Failed to analyze pdf invoice, for file %s".formatted(file.getOriginalFilename()), e);
-//		}
-//	}
 }
 
 
