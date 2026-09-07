@@ -1,0 +1,29 @@
+INVOICE
+
+Bright Office Supplies Ltd
+77 Commerce Park
+Manchester, UK
+
+Invoice Number: BOS-5521
+Invoice Date: 2024-06-01
+Due Date: 2024-06-30
+
+Bill To:
+Northwind Traders
+1 Market Square
+Rotterdam, Netherlands
+
+Description                    Qty      Unit Price     Total
+--------------------------------------------------------------
+Office chairs                    4        20.00           80.00
+Desk lamps                       4         5.00           20.00
+
+--------------------------------------------------------------
+Subtotal:                                                 100.00
+VAT (21%):                                                 21.00
+Amount already paid:                                         0.00
+--------------------------------------------------------------
+Total Amount Due: EUR 121.00
+
+Payment Terms: Net 30
+Please do not use the subtotal above for payment - pay the total amount due.

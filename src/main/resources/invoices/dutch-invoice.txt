@@ -1,0 +1,30 @@
+FACTUUR
+
+Jansen Bouwmaterialen B.V.
+Fabrieksstraat 22
+9203 AB Drachten
+KvK: 01234567
+BTW-nummer: NL001234567B01
+
+Factuurnummer: FACT-2024-0088
+Factuurdatum: 14-05-2024
+Vervaldatum: 13-06-2024
+
+Aan:
+Bouwbedrijf De Vries
+Havenweg 10
+8911 AA Leeuwarden
+
+Omschrijving                   Aantal    Prijs per stuk    Totaal
+--------------------------------------------------------------------
+Cement (25kg zak)                 40         5.50            220.00
+Transportkosten                    1        29.00             29.00
+
+--------------------------------------------------------------------
+Subtotaal:                                                   249.00
+BTW (0%, verlegd):                                              0.00
+
+Totaalbedrag te betalen: EUR 249,00
+
+Betalingstermijn: 30 dagen
+Gelieve het bedrag te voldoen o.v.v. het factuurnummer.
