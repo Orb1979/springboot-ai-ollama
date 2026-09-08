@@ -1,11 +1,15 @@
 package com.example.ollama.service;
 
-import com.example.ollama.dto.ChatRequest;
+import com.example.ollama.dto.ConversationRequest;
+import com.example.ollama.dto.ConversationResponse;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
 
-public class ChatService {
-
+@Log4j2
+@Service
+public class ConversationService {
 	private final ChatClient chatClient;
 	private final static String prompt = """
                 You are an assistant for an accountancy office.
@@ -14,7 +18,7 @@ public class ChatService {
                 Do not invent financial or legal information.
                 """;
 
-	public ChatService(@Qualifier("conversationClient") ChatClient chatClient) {
+	public ConversationService(@Qualifier("conversationClient") ChatClient chatClient) {
 		this.chatClient = chatClient;
 	}
 
@@ -26,12 +30,12 @@ public class ChatService {
 				       .content();
 	}
 
-	public String askPromptPost(ChatRequest chatRequest){
+	public ConversationResponse askPromptPost(ConversationRequest conversationRequest){
 		return chatClient
 				       .prompt()
 				       .system(prompt)
-				       .user(chatRequest.message())
+				       .user(conversationRequest.message())
 				       .call()
-				       .content();
+				       .entity(ConversationResponse.class);
 	}
 }

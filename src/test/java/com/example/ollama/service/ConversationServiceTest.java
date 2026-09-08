@@ -1,6 +1,7 @@
 package com.example.ollama.service;
 
-import com.example.ollama.dto.ChatRequest;
+import com.example.ollama.dto.ConversationRequest;
+import com.example.ollama.dto.ConversationResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,15 +15,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class ChatServiceTest {
+class ConversationServiceTest {
 	@Mock	private ChatClient chatClient;
 	@Mock private ChatClient.ChatClientRequestSpec requestSpec;
 	@Mock private ChatClient.CallResponseSpec callResponseSpec;
-	private ChatService chatService;
+	private ConversationService conversationService;
 
 	@BeforeEach
 	void setUp() {
-		chatService = new ChatService(chatClient);
+		conversationService = new ConversationService(chatClient);
 	}
 
 	@Test
@@ -32,7 +33,7 @@ class ChatServiceTest {
 		when(requestSpec.call()).thenReturn(callResponseSpec);
 		when(callResponseSpec.content()).thenReturn("AI response");
 
-		String response = chatService.test();
+		String response = conversationService.test();
 
 		assertEquals("AI response", response);
 		verify(requestSpec).user(anyString());
@@ -44,11 +45,11 @@ class ChatServiceTest {
 		when(requestSpec.system(anyString())).thenReturn(requestSpec);
 		when(requestSpec.user(anyString())).thenReturn(requestSpec);
 		when(requestSpec.call()).thenReturn(callResponseSpec);
-		when(callResponseSpec.content()).thenReturn("AI response");
+		when(callResponseSpec.entity(ConversationResponse.class)).thenReturn(new ConversationResponse("AI response"));
 
-		String response = chatService.askPromptPost(new ChatRequest("who are you?"));
+		ConversationResponse response = conversationService.askPromptPost(new ConversationRequest("who are you?"));
 
-		assertEquals("AI response", response);
+		assertEquals("AI response", response.message());
 		verify(requestSpec).user(anyString());
 		verify(requestSpec).system(anyString());
 	}
