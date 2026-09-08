@@ -15,10 +15,7 @@ public class TxtTextExtractor implements TextExtractor {
 
 	@Override
 	public String extract(byte[] fileBytes) {
-
-		return new String(
-				fileBytes,
-				StandardCharsets.UTF_8
+		return new String(fileBytes, StandardCharsets.UTF_8
 		);
 	}
 }

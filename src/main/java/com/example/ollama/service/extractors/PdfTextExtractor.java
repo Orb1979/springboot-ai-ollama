@@ -23,8 +23,7 @@ public class PdfTextExtractor implements TextExtractor {
 
 		try (PDDocument document = Loader.loadPDF(fileBytes)) {
 
-			PDFTextStripper pdfStripper =
-					new PDFTextStripper();
+			PDFTextStripper pdfStripper = new PDFTextStripper();
 
 			return pdfStripper.getText(document);
 		}

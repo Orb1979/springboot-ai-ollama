@@ -29,10 +29,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * stays readable and the fixtures are easy to add to.
  */
 @SpringBootTest
-class InvoiceAnalyzerIT {
+class InvoiceAnalyzerServiceIT {
 
 	@Autowired
-	private InvoiceAnalyzer invoiceAnalyzer;
+	private InvoiceAnalyzerService invoiceAnalyzerService;
 
 	@ParameterizedTest
 	@CsvSource({
@@ -50,7 +50,7 @@ class InvoiceAnalyzerIT {
 		byte[] bytes = Files.readAllBytes(Path.of("src/test/resources/invoices/" + fileName));
 		MockMultipartFile file = new MockMultipartFile("file", fileName, "text/plain", bytes);
 
-		InvoiceResponse response = invoiceAnalyzer.analyzeInvoice(file);
+		InvoiceResponse response = invoiceAnalyzerService.analyzeInvoice(file);
 
 		assertThat(response.supplier()).containsIgnoringCase(expectedSupplierContains);
 		assertThat(response.invoiceNumber()).isEqualToIgnoringCase(expectedInvoiceNumber);
@@ -63,7 +63,7 @@ class InvoiceAnalyzerIT {
 		byte[] bytes = Files.readAllBytes(Path.of("src/test/resources/invoices/dutch-invoice.png"));
 		MockMultipartFile file = new MockMultipartFile("file", "dutch-invoice.png", "image/png", bytes);
 
-		InvoiceResponse response = invoiceAnalyzer.analyzeInvoice(file);
+		InvoiceResponse response = invoiceAnalyzerService.analyzeInvoice(file);
 
 		assertThat(response.amount()).isEqualByComparingTo(new BigDecimal("249.00"));
 	}
@@ -73,7 +73,7 @@ class InvoiceAnalyzerIT {
 		byte[] bytes = Files.readAllBytes(Path.of("src/test/resources/invoices/invoice-with-subtotal.txt"));
 		MockMultipartFile file = new MockMultipartFile("file", "invoice-with-subtotal.txt", "text/plain", bytes);
 
-		InvoiceResponse response = invoiceAnalyzer.analyzeInvoice(file);
+		InvoiceResponse response = invoiceAnalyzerService.analyzeInvoice(file);
 
 		assertThat(response.amount()).isEqualByComparingTo(new BigDecimal("121.00"));
 	}

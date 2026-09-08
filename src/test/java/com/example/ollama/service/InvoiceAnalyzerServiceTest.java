@@ -26,7 +26,7 @@ import static org.mockito.Mockito.when;
  * These tests do NOT call a real model. They mock ChatClient's fluent chain
  * so we can verify InvoiceAnalyzer service logic: extractor selection, error handling, validate and save sequence.
  */
-class InvoiceAnalyzerTest {
+class InvoiceAnalyzerServiceTest {
 
 	@Mock private ChatClient chatClient;
 	@Mock private ChatClient.ChatClientRequestSpec requestSpec;
@@ -36,13 +36,13 @@ class InvoiceAnalyzerTest {
 	@Mock private InvoiceResponseValidator invoiceResponseValidator;
 	@Mock private InvoiceRepository invoiceRepository;
 
-	private InvoiceAnalyzer invoiceAnalyzer;
+	private InvoiceAnalyzerService invoiceAnalyzerService;
 
 	@BeforeEach
 	void setUp() {
 		MockitoAnnotations.openMocks(this);
 
-		invoiceAnalyzer = new InvoiceAnalyzer(
+		invoiceAnalyzerService = new InvoiceAnalyzerService(
 				chatClient,
 				fileTypeDetector,
 				List.of(textExtractor),
@@ -62,7 +62,7 @@ class InvoiceAnalyzerTest {
 		when(textExtractor.extract(any())).thenReturn("Invoice text content");
 		mockChatClientChain(expected);
 
-		InvoiceResponse actual = invoiceAnalyzer.analyzeInvoice(file);
+		InvoiceResponse actual = invoiceAnalyzerService.analyzeInvoice(file);
 
 		assertThat(actual).isEqualTo(expected);
 		verify(invoiceResponseValidator).validate(expected);
@@ -77,7 +77,7 @@ class InvoiceAnalyzerTest {
 		when(fileTypeDetector.detect(any())).thenReturn(FileType.IMAGE);
 		when(textExtractor.supports(FileType.IMAGE)).thenReturn(false);
 
-		assertThatThrownBy(() -> invoiceAnalyzer.analyzeInvoice(file))
+		assertThatThrownBy(() -> invoiceAnalyzerService.analyzeInvoice(file))
 				.isInstanceOf(InvoiceAnalyzeException.class)
 				.hasMessageContaining("No TextExtractor found for file type: IMAGE");
 	}
@@ -92,7 +92,7 @@ class InvoiceAnalyzerTest {
 		when(textExtractor.extract(any())).thenReturn("Invoice text content");
 		mockChatClientChain(null);
 
-		assertThatThrownBy(() -> invoiceAnalyzer.analyzeInvoice(file))
+		assertThatThrownBy(() -> invoiceAnalyzerService.analyzeInvoice(file))
 				.isInstanceOf(InvoiceAnalyzeException.class)
 				.hasMessageContaining("Failed to extract invoice information");
 	}
@@ -109,12 +109,11 @@ class InvoiceAnalyzerTest {
 		when(textExtractor.extract(any())).thenReturn("UNIQUE_MARKER_TEXT_12345");
 		mockChatClientChain(response);
 
-		invoiceAnalyzer.analyzeInvoice(file);
+		invoiceAnalyzerService.analyzeInvoice(file);
 
 		verify(requestSpec).user(org.mockito.ArgumentMatchers.contains("UNIQUE_MARKER_TEXT_12345"));
 	}
 
-	@SuppressWarnings("unchecked")
 	private void mockChatClientChain(InvoiceResponse toReturn) {
 		when(chatClient.prompt()).thenReturn(requestSpec);
 		when(requestSpec.user(anyString())).thenReturn(requestSpec);

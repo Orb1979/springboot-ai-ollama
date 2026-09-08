@@ -2,7 +2,7 @@ package com.example.ollama.controller;
 
 import com.example.ollama.dto.InvoiceResponse;
 import com.example.ollama.exception.InvoiceAnalyzeException;
-import com.example.ollama.service.InvoiceAnalyzer;
+import com.example.ollama.service.InvoiceAnalyzerService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -19,10 +19,11 @@ import java.io.IOException;
 @RequestMapping("/ai/invoices")
 @RequiredArgsConstructor
 public class InvoiceController {
-	private final InvoiceAnalyzer invoiceAnalyzeService;
+	private final InvoiceAnalyzerService invoiceAnalyzeService;
 
 	// curl -X POST http://localhost:8080/ai/invoices/analyze -F "file=@example-invoice.txt"
 	// curl -X POST http://localhost:8080/ai/invoices/analyze -F "file=@example-invoice.pdf"
+	// curl -X POST http://localhost:8080/ai/invoices/analyze -F "file=@example-invoice.png"
 	@PostMapping("/analyze")
 	public InvoiceResponse analyzeText(@RequestParam("file") MultipartFile file)  {
 		log.info("Analyzing invoice: {}", file.getOriginalFilename());

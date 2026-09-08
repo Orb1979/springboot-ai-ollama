@@ -17,7 +17,7 @@ import java.util.List;
 
 @Log4j2
 @Service
-public class InvoiceAnalyzer {
+public class InvoiceAnalyzerService {
 	private final ChatClient chatClient;
 	private final FileTypeDetector fileTypeDetector;
 	private final List<TextExtractor> textExtractors;
@@ -44,7 +44,7 @@ public class InvoiceAnalyzer {
 			%s
 			""";
 
-	public InvoiceAnalyzer(
+	public InvoiceAnalyzerService(
 			@Qualifier("generalClient") ChatClient chatClient,
 	    FileTypeDetector fileTypeDetector,
 	    List<TextExtractor> textExtractors,
