@@ -1,56 +1,27 @@
 package com.example.ollama.controller;
 
 import com.example.ollama.dto.ChatRequest;
+import com.example.ollama.service.ChatService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.*;
 
 @Log4j2
 @RestController
 @RequestMapping("/ai/chat")
+@RequiredArgsConstructor
 public class ChatController {
-    private final ChatClient chatClient;
-    private final static String prompt = """
-                You are an assistant for an accountancy office.
-                Answer questions professionally.
-                If you don't know the answer, say so.
-                Do not invent financial or legal information.
-                """;
-
-    public ChatController(@Qualifier("conversationClient") ChatClient chatClient) {
-        this.chatClient = chatClient;
-    }
+    private final ChatService chatService;
 
     // curl http://localhost:8080/ai/chat/test
     @GetMapping("/test")
     public String ask() {
-        return chatClient
-                .prompt()
-                .user("who are you?")
-                .call()
-                .content();
-    }
-
-    // curl 'http://localhost:8080/ai/chat?message=what%20is%20a%20invoice'
-    @GetMapping
-    public String askPrompt(@RequestParam String message) {
-        return chatClient
-                   .prompt()
-                   .system(prompt)
-                   .user(message)
-                   .call()
-                   .content();
+        return chatService.test();
     }
 
     // curl -X POST 'http://localhost:8080/ai/chat' -d '{"message": "Explain what an invoice is"}'
     @PostMapping()
     public String askPost(@RequestBody ChatRequest chatRequest) {
-        return chatClient
-                .prompt()
-                .system(prompt)
-                .user(chatRequest.message())
-                .call()
-                .content();
+        return chatService.askPromptPost(chatRequest);
     }
 }
