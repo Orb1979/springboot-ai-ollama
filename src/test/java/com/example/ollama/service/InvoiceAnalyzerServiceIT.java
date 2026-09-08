@@ -65,6 +65,7 @@ class InvoiceAnalyzerServiceIT {
 
 		InvoiceResponse response = invoiceAnalyzerService.analyzeInvoice(file);
 
+		// note: getting value from image in rare occasions gives the wrong value (at least with my local model)
 		assertThat(response.amount()).isEqualByComparingTo(new BigDecimal("249.00"));
 	}
 
@@ -77,6 +78,4 @@ class InvoiceAnalyzerServiceIT {
 
 		assertThat(response.amount()).isEqualByComparingTo(new BigDecimal("121.00"));
 	}
-
-
 }

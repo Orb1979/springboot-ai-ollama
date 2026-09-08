@@ -8,8 +8,8 @@ import com.example.ollama.service.extractors.TextExtractor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.mock.web.MockMultipartFile;
@@ -21,25 +21,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-/**
- * These tests do NOT call a real model. They mock ChatClient's fluent chain
- * so we can verify InvoiceAnalyzer service logic: extractor selection, error handling, validate and save sequence.
- */
 
 @ExtendWith(MockitoExtension.class)
 class InvoiceAnalyzerServiceTest {
 
-	@Mock private ChatClient chatClient;
-	@Mock private ChatClient.ChatClientRequestSpec requestSpec;
-	@Mock private ChatClient.CallResponseSpec callResponseSpec;
-	@Mock private FileTypeDetector fileTypeDetector;
-	@Mock private TextExtractor textExtractor;
-	@Mock private InvoiceResponseValidator invoiceResponseValidator;
-	@Mock private InvoiceRepository invoiceRepository;
-
+	@Mock	private ChatClient chatClient;
+	@Mock	private ChatClient.ChatClientRequestSpec requestSpec;
+	@Mock	private ChatClient.CallResponseSpec callResponseSpec;
+	@Mock	private FileTypeDetector fileTypeDetector;
+	@Mock	private TextExtractor textExtractor;
+	@Mock	private InvoiceResponseValidator invoiceResponseValidator;
+	@Mock	private InvoiceRepository invoiceRepository;
 	private InvoiceAnalyzerService invoiceAnalyzerService;
 
 	@BeforeEach
@@ -49,20 +45,22 @@ class InvoiceAnalyzerServiceTest {
 				fileTypeDetector,
 				List.of(textExtractor),
 				invoiceResponseValidator,
-				invoiceRepository);
+				invoiceRepository
+		);
 	}
 
 	@Test
 	void analyzeInvoice_happyPath_extractsValidatesAndSaves() throws Exception {
-		MockMultipartFile file = new MockMultipartFile(
-				"file", "invoice.txt", "text/plain", "raw bytes".getBytes());
+		MockMultipartFile file = createTextFile();
 		InvoiceResponse expected = new InvoiceResponse(
-				"Acme Corp", "INV-001", new BigDecimal("99.90"), "EUR");
-
-		when(fileTypeDetector.detect(any())).thenReturn(FileType.TEXT);
-		when(textExtractor.supports(FileType.TEXT)).thenReturn(true);
-		when(textExtractor.extract(any())).thenReturn("Invoice text content");
-		mockChatClientChain(expected);
+				"Acme Corp",
+				"INV-001",
+				new BigDecimal("99.90"),
+				"EUR"
+		);
+		String validJson = validInvoiceJson();
+		givenValidFile();
+		mockChatClientChain(validJson);
 
 		InvoiceResponse actual = invoiceAnalyzerService.analyzeInvoice(file);
 
@@ -74,52 +72,237 @@ class InvoiceAnalyzerServiceTest {
 	@Test
 	void analyzeInvoice_noMatchingExtractor_throwsInvoiceAnalyzeException() {
 		MockMultipartFile file = new MockMultipartFile(
-				"file", "photo.png", "image/png", new byte[]{1, 2, 3});
-
+				"file",
+				"photo.png",
+				"image/png",
+				new byte[]{1, 2, 3}
+		);
 		when(fileTypeDetector.detect(any())).thenReturn(FileType.IMAGE);
 		when(textExtractor.supports(FileType.IMAGE)).thenReturn(false);
 
 		assertThatThrownBy(() -> invoiceAnalyzerService.analyzeInvoice(file))
 				.isInstanceOf(InvoiceAnalyzeException.class)
 				.hasMessageContaining("No TextExtractor found for file type: IMAGE");
+		verify(invoiceRepository, never()).save(any());
+		verify(invoiceResponseValidator, never()).validate(any());
 	}
 
 	@Test
-	void analyzeInvoice_modelReturnsNull_throwsInvoiceAnalyzeException() throws Exception {
-		MockMultipartFile file = new MockMultipartFile(
-				"file", "invoice.txt", "text/plain", "raw bytes".getBytes());
-
-		when(fileTypeDetector.detect(any())).thenReturn(FileType.TEXT);
-		when(textExtractor.supports(FileType.TEXT)).thenReturn(true);
-		when(textExtractor.extract(any())).thenReturn("Invoice text content");
-		mockChatClientChain(null);
+	void analyzeInvoice_modelReturnsEmptyResponse_retriesAndEventuallyFails() throws Exception {
+		MockMultipartFile file = createTextFile();
+		givenValidFile();
+		mockChatClientChain(null, null, null);
 
 		assertThatThrownBy(() -> invoiceAnalyzerService.analyzeInvoice(file))
 				.isInstanceOf(InvoiceAnalyzeException.class)
-				.hasMessageContaining("Failed to extract invoice information");
+				.hasMessageContaining("Model did not return valid JSON after 3 attempts");
+
+		verify(callResponseSpec, times(3)).content();
+		verify(invoiceResponseValidator, never()).validate(any());
+		verify(invoiceRepository, never()).save(any());
 	}
 
 	@Test
 	void analyzeInvoice_promptIncludesExtractedText() throws Exception {
-		MockMultipartFile file = new MockMultipartFile(
-				"file", "invoice.txt", "text/plain", "raw bytes".getBytes());
-		InvoiceResponse response = new InvoiceResponse(
-				"Acme Corp", "INV-001", new BigDecimal("10.00"), "EUR");
+		MockMultipartFile file = createTextFile();
+		givenValidFileWithText("UNIQUE_MARKER_TEXT_12345");
+		mockChatClientChain(validInvoiceJson());
+		invoiceAnalyzerService.analyzeInvoice(file);
 
-		when(fileTypeDetector.detect(any())).thenReturn(FileType.TEXT);
-		when(textExtractor.supports(FileType.TEXT)).thenReturn(true);
-		when(textExtractor.extract(any())).thenReturn("UNIQUE_MARKER_TEXT_12345");
-		mockChatClientChain(response);
+		ArgumentCaptor<String> promptCaptor = ArgumentCaptor.forClass(String.class);
+
+		verify(requestSpec) .user(promptCaptor.capture());
+		assertThat(promptCaptor.getValue()).contains("UNIQUE_MARKER_TEXT_12345");
+	}
+
+	@Test
+	void analyzeInvoice_systemPromptIsProvided() throws Exception {
+		MockMultipartFile file = createTextFile();
+		givenValidFile();
+		mockChatClientChain(validInvoiceJson());
 
 		invoiceAnalyzerService.analyzeInvoice(file);
 
-		verify(requestSpec).user(org.mockito.ArgumentMatchers.contains("UNIQUE_MARKER_TEXT_12345"));
+		verify(requestSpec).system(anyString());
+		verify(requestSpec).system(org.mockito.ArgumentMatchers.contains(
+						"Extract the following information from this invoice"
+				));
 	}
 
-	private void mockChatClientChain(InvoiceResponse toReturn) {
+	@Test
+	void analyzeInvoice_invalidJsonThenValidJson_retriesAndSucceeds() throws Exception {
+		MockMultipartFile file = createTextFile();
+		InvoiceResponse expected = new InvoiceResponse(
+				"Acme Corp",
+				"INV-001",
+				new BigDecimal("99.90"),
+				"EUR"
+		);
+		givenValidFile();
+
+		mockChatClientChain("THIS IS NOT VALID JSON", validInvoiceJson());
+
+		InvoiceResponse actual = invoiceAnalyzerService.analyzeInvoice(file);
+
+		assertThat(actual).isEqualTo(expected);
+
+		verify(callResponseSpec, times(2)).content();
+		verify(invoiceResponseValidator).validate(expected);
+		verify(invoiceRepository).save(any());
+	}
+
+	@Test
+	void analyzeInvoice_invalidJsonAfterAllRetries_throwsException() throws Exception {
+
+		MockMultipartFile file = createTextFile();
+		givenValidFile();
+		mockChatClientChain("INVALID JSON 1", "INVALID JSON 2", "INVALID JSON 3");
+
+		assertThatThrownBy(() -> invoiceAnalyzerService.analyzeInvoice(file))
+				.isInstanceOf(InvoiceAnalyzeException.class)
+				.hasMessageContaining(
+						"Model did not return valid JSON after 3 attempts"
+				);
+
+		verify(callResponseSpec, times(3)).content();
+		verify(invoiceResponseValidator, never()).validate(any());
+		verify(invoiceRepository, never()).save(any());
+	}
+
+	@Test
+	void analyzeInvoice_invalidJson_retryAddsCorrectionInstruction() throws Exception {
+		MockMultipartFile file = createTextFile();
+		givenValidFile();
+		mockChatClientChain("INVALID JSON", validInvoiceJson());
+
+		invoiceAnalyzerService.analyzeInvoice(file);
+
+		ArgumentCaptor<String> promptCaptor = ArgumentCaptor.forClass(String.class);
+
+		verify(requestSpec, times(2)).user(promptCaptor.capture());
+
+		List<String> prompts = promptCaptor.getAllValues();
+
+		// First attempt contains the invoice text
+		assertThat(prompts.get(0)).contains("Invoice text content");
+
+		// First attempt should not contain correction instruction
+		assertThat(prompts.get(0)).doesNotContain("Your previous response could not be parsed");
+		assertThat(prompts.get(1)).contains("Your previous response could not be parsed as valid JSON");
+
+		// The original invoice text should still be present
+		assertThat(prompts.get(1)).contains("Invoice text content");
+	}
+
+	@Test
+	void analyzeInvoice_modelReturnsJsonWrappedInMarkdown_parsesSuccessfully()  throws Exception {
+		MockMultipartFile file = createTextFile();
+		givenValidFile();
+		String wrappedJson = """
+        ```json
+        {
+          "supplier": "Acme Corp",
+          "invoiceNumber": "INV-001",
+          "amount": 99.90,
+          "currency": "EUR"
+        }
+        ```
+        """;
+		InvoiceResponse expected = new InvoiceResponse(
+				"Acme Corp",
+				"INV-001",
+				new BigDecimal("99.90"),
+				"EUR"
+		);
+		mockChatClientChain(wrappedJson);
+		InvoiceResponse actual = invoiceAnalyzerService.analyzeInvoice(file);
+
+		assertThat(actual).isEqualTo(expected);
+
+		verify(callResponseSpec, times(1)).content();
+		verify(invoiceResponseValidator).validate(expected);
+		verify(invoiceRepository).save(any());
+	}
+
+	@Test
+	void analyzeInvoice_modelReturnsTextAroundJson_parsesSuccessfully() throws Exception {
+		MockMultipartFile file = createTextFile();
+		givenValidFile();
+		String responseWithExtraText = """
+        Here is the invoice information:
+        {
+          "supplier": "Acme Corp",
+          "invoiceNumber": "INV-001",
+          "amount": 99.90,
+          "currency": "EUR"
+        }
+        Hope this helps!
+        """;
+		InvoiceResponse expected = new InvoiceResponse(
+				"Acme Corp",
+				"INV-001",
+				new BigDecimal("99.90"),
+				"EUR"
+		);
+		mockChatClientChain(responseWithExtraText);
+
+		InvoiceResponse actual = invoiceAnalyzerService.analyzeInvoice(file);
+
+		assertThat(actual).isEqualTo(expected);
+		verify(invoiceResponseValidator).validate(expected);
+		verify(invoiceRepository).save(any());
+	}
+
+	@Test
+	void analyzeInvoice_validJson_doesNotRetry()
+			throws Exception {
+
+		MockMultipartFile file = createTextFile();
+		givenValidFile();
+		mockChatClientChain(validInvoiceJson());
+
+		invoiceAnalyzerService.analyzeInvoice(file);
+
+		verify(callResponseSpec, times(1)).content();
+		verify(requestSpec, times(1)).user(anyString());
+		verify(invoiceRepository, times(1)).save(any());
+	}
+
+	private void mockChatClientChain(String firstResponse, String... subsequentResponses) {
 		when(chatClient.prompt()).thenReturn(requestSpec);
+		when(requestSpec.system(anyString())).thenReturn(requestSpec);
 		when(requestSpec.user(anyString())).thenReturn(requestSpec);
 		when(requestSpec.call()).thenReturn(callResponseSpec);
-		when(callResponseSpec.entity(InvoiceResponse.class)).thenReturn(toReturn);
+		when(callResponseSpec.content()).thenReturn(firstResponse, subsequentResponses);
+	}
+
+	private void givenValidFile() throws Exception {
+		givenValidFileWithText("Invoice text content");
+	}
+
+	private void givenValidFileWithText(String invoiceText) throws Exception {
+		when(fileTypeDetector.detect(any())).thenReturn(FileType.TEXT);
+		when(textExtractor.supports(FileType.TEXT)).thenReturn(true);
+		when(textExtractor.extract(any())).thenReturn(invoiceText);
+	}
+
+	private MockMultipartFile createTextFile() {
+		return new MockMultipartFile(
+				"file",
+				"invoice.txt",
+				"text/plain",
+				"raw bytes".getBytes()
+		);
+	}
+
+	private String validInvoiceJson() {
+		return """
+        {
+          "supplier": "Acme Corp",
+          "invoiceNumber": "INV-001",
+          "amount": 99.90,
+          "currency": "EUR"
+        }
+        """;
 	}
 }
