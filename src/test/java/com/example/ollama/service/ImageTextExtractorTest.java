@@ -6,8 +6,10 @@ import com.example.ollama.service.FileTypeDetector;
 import com.example.ollama.service.extractors.ImageTextExtractor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.client.ChatClient;
 
 import java.util.function.Consumer;
@@ -17,8 +19,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class ImageTextExtractorTest {
-
 	@Mock private ChatClient chatClient;
 	@Mock private ChatClient.ChatClientRequestSpec requestSpec;
 	@Mock private ChatClient.CallResponseSpec callResponseSpec;
@@ -33,7 +35,6 @@ class ImageTextExtractorTest {
 
 	@BeforeEach
 	void setUp() {
-		MockitoAnnotations.openMocks(this);
 		imageTextExtractor = new ImageTextExtractor(chatClient, fileTypeDetector);
 	}
 

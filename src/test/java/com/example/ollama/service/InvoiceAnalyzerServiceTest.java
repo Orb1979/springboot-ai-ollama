@@ -7,8 +7,10 @@ import com.example.ollama.repo.InvoiceRepository;
 import com.example.ollama.service.extractors.TextExtractor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.mock.web.MockMultipartFile;
 
@@ -26,6 +28,8 @@ import static org.mockito.Mockito.when;
  * These tests do NOT call a real model. They mock ChatClient's fluent chain
  * so we can verify InvoiceAnalyzer service logic: extractor selection, error handling, validate and save sequence.
  */
+
+@ExtendWith(MockitoExtension.class)
 class InvoiceAnalyzerServiceTest {
 
 	@Mock private ChatClient chatClient;
@@ -40,8 +44,6 @@ class InvoiceAnalyzerServiceTest {
 
 	@BeforeEach
 	void setUp() {
-		MockitoAnnotations.openMocks(this);
-
 		invoiceAnalyzerService = new InvoiceAnalyzerService(
 				chatClient,
 				fileTypeDetector,

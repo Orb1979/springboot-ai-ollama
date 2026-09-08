@@ -1,12 +1,11 @@
 package com.example.ollama.service;
 
 import com.example.ollama.dto.ChatRequest;
-import com.example.ollama.dto.InvoiceResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.client.ChatClient;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -14,6 +13,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class ChatServiceTest {
 	@Mock	private ChatClient chatClient;
 	@Mock private ChatClient.ChatClientRequestSpec requestSpec;
@@ -22,7 +22,6 @@ class ChatServiceTest {
 
 	@BeforeEach
 	void setUp() {
-		MockitoAnnotations.openMocks(this);
 		chatService = new ChatService(chatClient);
 	}
 
