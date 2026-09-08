@@ -19,7 +19,6 @@ import static org.mockito.Mockito.when;
 
 class ImageTextExtractorTest {
 
-	@Mock private ChatClient.Builder chatClientBuilder;
 	@Mock private ChatClient chatClient;
 	@Mock private ChatClient.ChatClientRequestSpec requestSpec;
 	@Mock private ChatClient.CallResponseSpec callResponseSpec;
@@ -35,8 +34,7 @@ class ImageTextExtractorTest {
 	@BeforeEach
 	void setUp() {
 		MockitoAnnotations.openMocks(this);
-		when(chatClientBuilder.build()).thenReturn(chatClient);
-		imageTextExtractor = new ImageTextExtractor(chatClientBuilder, fileTypeDetector);
+		imageTextExtractor = new ImageTextExtractor(chatClient, fileTypeDetector);
 	}
 
 	@Test

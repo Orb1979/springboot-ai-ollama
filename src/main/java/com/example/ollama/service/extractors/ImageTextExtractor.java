@@ -5,21 +5,19 @@ import com.example.ollama.exception.InvoiceAnalyzeException;
 import com.example.ollama.service.FileTypeDetector;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MimeType;
 
-// Image bytes > vision model transcribes visible text > plain String
-// Requires a vision-capable Ollama model, e.g.:
-//   ollama pull llava
-// and spring.ai.ollama.chat.model=llava in application.properties.
-// (See the class-level note in the README/config about the trade-off of
-// using one shared model for both vision and text-reasoning tasks.)
+/**
+	Image bytes > vision model transcribes visible text > plain String
+	Requires a vision-capable model
+**/
 
 @Log4j2
 @Service
 public class ImageTextExtractor implements TextExtractor {
-
 	private final ChatClient chatClient;
 	private final FileTypeDetector fileTypeDetector;
 
@@ -32,9 +30,9 @@ public class ImageTextExtractor implements TextExtractor {
 			""";
 
 	public ImageTextExtractor(
-			ChatClient.Builder chatClientBuilder,
+			@Qualifier("visionClient") ChatClient chatClient,
 			FileTypeDetector fileTypeDetector) {
-		this.chatClient = chatClientBuilder.build();
+		this.chatClient = chatClient;
 		this.fileTypeDetector = fileTypeDetector;
 	}
 

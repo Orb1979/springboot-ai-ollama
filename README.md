@@ -108,3 +108,42 @@ Unstructured text ──────► Structured JSON
                      InvoiceResponse
 
 ```
+
+Example just 1 chatclient, with 1 model: \
+application.properties > OllamaChatModel  > ChatClient.Builder > ChatClient
+This gets autoconfigured, no Config classes needed
+```
+spring.ai.ollama.conversation-model=qwen3.5:9b
+public ChatController(ChatClient.Builder chatClientBuilder) {
+     this.chatClient = chatClientBuilder.build();
+}
+```
+
+Multiple chatClients, each with unique model \
+Requires @qualifier for ChatClient and OllamaChatModel \
+advantage: Your business code doesn't care whether about the specific model, it's only set in application properties
+```
+generalClient ──> qwen3.5:9b
+chatClient ─────> another-model
+visionClient ───> vision-model
+```
+
+its possible to change the model of the chatClient dynamically \
+This is more flexible but means your application code has to decide which model to use.
+```
+┌── qwen3.5:9b
+ChatClient ─────────┼── another-model
+└── vision-model
+
+chatClient
+    .prompt()
+    .options(
+        OllamaChatOptions.builder()
+            .model("qwen3.5:9b")
+            .build()
+    )
+    .user("Hello")
+    .call();
+
+```
+

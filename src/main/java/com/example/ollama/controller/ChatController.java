@@ -3,10 +3,12 @@ package com.example.ollama.controller;
 import com.example.ollama.dto.ChatRequest;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.*;
 
 @Log4j2
 @RestController
+@RequestMapping("/ai/chat")
 public class ChatController {
     private final ChatClient chatClient;
     private final static String prompt = """
@@ -16,12 +18,12 @@ public class ChatController {
                 Do not invent financial or legal information.
                 """;
 
-    public ChatController(ChatClient.Builder chatClientBuilder) {
-        this.chatClient = chatClientBuilder.build();
+    public ChatController(@Qualifier("conversationClient") ChatClient chatClient) {
+        this.chatClient = chatClient;
     }
 
-    // curl http://localhost:8080/test
-    @GetMapping("/ai/test")
+    // curl http://localhost:8080/ai/chat/test
+    @GetMapping("/test")
     public String ask() {
         return chatClient
                 .prompt()
@@ -31,7 +33,7 @@ public class ChatController {
     }
 
     // curl 'http://localhost:8080/ai/chat?message=what%20is%20a%20invoice'
-    @GetMapping("/ai/chat")
+    @GetMapping
     public String askPrompt(@RequestParam String message) {
         return chatClient
                    .prompt()
@@ -42,7 +44,7 @@ public class ChatController {
     }
 
     // curl -X POST 'http://localhost:8080/ai/chat' -d '{"message": "Explain what an invoice is"}'
-    @PostMapping("/ai/chat")
+    @PostMapping()
     public String askPost(@RequestBody ChatRequest chatRequest) {
         return chatClient
                 .prompt()

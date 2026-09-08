@@ -7,6 +7,7 @@ import com.example.ollama.repo.InvoiceRepository;
 import com.example.ollama.service.extractors.TextExtractor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import com.example.ollama.domain.FileType;
@@ -44,12 +45,12 @@ public class InvoiceAnalyzer {
 			""";
 
 	public InvoiceAnalyzer(
-			ChatClient.Builder chatClientBuilder,
+			@Qualifier("generalClient") ChatClient chatClient,
 	    FileTypeDetector fileTypeDetector,
 	    List<TextExtractor> textExtractors,
 	    InvoiceResponseValidator invoiceResponseValidator,
 	    InvoiceRepository invoiceRepository) {
-		this.chatClient = chatClientBuilder.build();
+		this.chatClient = chatClient;
 		this.fileTypeDetector = fileTypeDetector;
 		this.textExtractors = textExtractors;
 		this.invoiceResponseValidator = invoiceResponseValidator;

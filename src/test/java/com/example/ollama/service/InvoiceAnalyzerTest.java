@@ -28,7 +28,6 @@ import static org.mockito.Mockito.when;
  */
 class InvoiceAnalyzerTest {
 
-	@Mock private ChatClient.Builder chatClientBuilder;
 	@Mock private ChatClient chatClient;
 	@Mock private ChatClient.ChatClientRequestSpec requestSpec;
 	@Mock private ChatClient.CallResponseSpec callResponseSpec;
@@ -42,10 +41,9 @@ class InvoiceAnalyzerTest {
 	@BeforeEach
 	void setUp() {
 		MockitoAnnotations.openMocks(this);
-		when(chatClientBuilder.build()).thenReturn(chatClient);
 
 		invoiceAnalyzer = new InvoiceAnalyzer(
-				chatClientBuilder,
+				chatClient,
 				fileTypeDetector,
 				List.of(textExtractor),
 				invoiceResponseValidator,

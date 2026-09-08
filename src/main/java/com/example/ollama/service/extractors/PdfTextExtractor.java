@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 
-// PDF bytes > Loader.loadPDF() > PDDocument > PDFTextStripper > String
+/** PDF bytes > Loader.loadPDF() > PDDocument > PDFTextStripper > String **/
 
 @Service
 public class PdfTextExtractor implements TextExtractor {
