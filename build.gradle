@@ -29,6 +29,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-flyway'
     implementation 'org.flywaydb:flyway-database-postgresql'
     implementation 'org.springframework.ai:spring-ai-starter-model-ollama'
+    implementation 'org.springframework.ai:spring-ai-starter-model-openai'
+    implementation 'com.openai:openai-java-client-okhttp:4.49.0'
     implementation 'org.apache.pdfbox:pdfbox:3.0.3'
 
     compileOnly 'org.projectlombok:lombok'
