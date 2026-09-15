@@ -5,11 +5,9 @@ import {
   type DragEvent,
   type KeyboardEvent,
 } from 'react'
-import { analyzeInvoice, listInvoices, updateInvoice } from '../api/client'
+import { analyzeInvoice, updateInvoice } from '../api/client'
 import type { InvoiceResponse } from '../api/types'
-import {
-  InvoiceEditableFields,
-} from './InvoiceEditableFields'
+import { InvoiceEditableFields } from './InvoiceEditableFields'
 import {
   isDraftDirty,
   toDraft,
@@ -32,8 +30,6 @@ const supportedExtension = /\.(txt|pdf|png|jpe?g|gif|bmp|webp)$/i
 const unsupportedFileMessage =
   'Choose a TXT, PDF, PNG, JPEG, GIF, BMP, or WebP file.'
 
-type InvoiceView = 'upload' | 'list' | 'edit'
-
 function formatFileSize(bytes: number) {
   if (bytes < 1024) {
     return `${bytes} B`
@@ -44,25 +40,12 @@ function formatFileSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-function formatAmount(amount: number, currency: string) {
-  return `${currency} ${new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount)}`
-}
-
 export function InvoiceAnalyzer() {
   const fileInput = useRef<HTMLInputElement>(null)
   const requestId = useRef(0)
-  const [view, setView] = useState<InvoiceView>('upload')
   const [file, setFile] = useState<File | null>(null)
   const [result, setResult] = useState<InvoiceResponse | null>(null)
   const [draft, setDraft] = useState<InvoiceDraft | null>(null)
-  const [invoices, setInvoices] = useState<InvoiceResponse[]>([])
-  const [editingInvoice, setEditingInvoice] = useState<InvoiceResponse | null>(
-    null,
-  )
-  const [editDraft, setEditDraft] = useState<InvoiceDraft | null>(null)
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -144,43 +127,20 @@ export function InvoiceAnalyzer() {
     }
   }
 
-  async function handleShowInvoices() {
-    setIsLoading(true)
-    setError('')
-    try {
-      setInvoices(await listInvoices())
-      setView('list')
-    } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : 'Unable to load invoices.',
-      )
-    } finally {
-      setIsLoading(false)
+  async function handleUpdate() {
+    if (!result || !draft || isSaving) {
+      return
     }
-  }
 
-  function openEdit(invoice: InvoiceResponse) {
-    setEditingInvoice(invoice)
-    setEditDraft(toDraft(invoice))
-    setError('')
-    setView('edit')
-  }
-
-  async function saveDraft(
-    invoice: InvoiceResponse,
-    nextDraft: InvoiceDraft,
-    onSaved: (saved: InvoiceResponse) => void,
-  ) {
     setIsSaving(true)
     setError('')
     try {
       const saved = await updateInvoice(
-        invoice.id,
-        toUpdatePayload(invoice, nextDraft),
+        result.id,
+        toUpdatePayload(result, draft),
       )
-      onSaved(saved)
+      setResult(saved)
+      setDraft(toDraft(saved))
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -194,148 +154,6 @@ export function InvoiceAnalyzer() {
 
   const analyzedDirty =
     result !== null && draft !== null ? isDraftDirty(draft, result) : false
-  const editDirty =
-    editingInvoice !== null && editDraft !== null
-      ? isDraftDirty(editDraft, editingInvoice)
-      : false
-
-  if (view === 'list') {
-    return (
-      <section className="tool-panel" aria-labelledby="invoice-list-heading">
-        <div className="panel-heading">
-          <p className="eyebrow">Document intelligence</p>
-          <h2 id="invoice-list-heading">Uploaded invoices</h2>
-          <p>Review every stored invoice and open one to edit.</p>
-        </div>
-        <div className="form-actions form-actions-split">
-          <button
-            className="secondary-button"
-            type="button"
-            onClick={() => setView('upload')}
-          >
-            Back to upload
-          </button>
-        </div>
-        {error && (
-          <p className="status-message error" role="alert" aria-label={error}>
-            {error}
-          </p>
-        )}
-        <div className="invoice-table-wrap">
-          <table className="invoice-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Supplier</th>
-                <th>Street</th>
-                <th>Number</th>
-                <th>City</th>
-                <th>Postal code</th>
-                <th>Invoice number</th>
-                <th>Invoice date</th>
-                <th>Amount</th>
-                <th>Currency</th>
-                <th>Uploaded</th>
-                <th>Payment received</th>
-                <th>Updated</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {invoices.map((invoice) => (
-                <tr key={invoice.id}>
-                  <td>{invoice.id}</td>
-                  <td>{invoice.supplier}</td>
-                  <td>{invoice.supplierStreet}</td>
-                  <td>{invoice.supplierStreetNumber}</td>
-                  <td>{invoice.supplierCity}</td>
-                  <td>{invoice.supplierPostalCode}</td>
-                  <td>{invoice.invoiceNumber}</td>
-                  <td>{invoice.invoiceDate}</td>
-                  <td>{formatAmount(invoice.amount, invoice.currency)}</td>
-                  <td>{invoice.currency}</td>
-                  <td>{invoice.uploadedDate}</td>
-                  <td>{invoice.paymentReceivedDate ?? 'Pending'}</td>
-                  <td>{invoice.updatedDate ?? 'Not updated'}</td>
-                  <td>
-                    <button
-                      className="secondary-button"
-                      type="button"
-                      onClick={() => openEdit(invoice)}
-                    >
-                      Edit
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {invoices.length === 0 && (
-            <p className="empty-state">No invoices have been uploaded yet.</p>
-          )}
-        </div>
-      </section>
-    )
-  }
-
-  if (view === 'edit' && editingInvoice && editDraft) {
-    return (
-      <section className="tool-panel" aria-labelledby="invoice-edit-heading">
-        <div className="panel-heading">
-          <p className="eyebrow">Document intelligence</p>
-          <h2 id="invoice-edit-heading">Edit invoice #{editingInvoice.id}</h2>
-          <p>Update invoice details and save them back to the server.</p>
-        </div>
-        <InvoiceEditableFields
-          idPrefix="edit"
-          draft={editDraft}
-          uploadedDate={editingInvoice.uploadedDate}
-          updatedDate={editingInvoice.updatedDate}
-          onChange={(field, value) =>
-            setEditDraft((current) =>
-              current ? { ...current, [field]: value } : current,
-            )
-          }
-        />
-        {error && (
-          <p className="status-message error" role="alert" aria-label={error}>
-            {error}
-          </p>
-        )}
-        <div className="form-actions form-actions-split">
-          <button
-            className="secondary-button"
-            type="button"
-            onClick={() => {
-              setEditingInvoice(null)
-              setEditDraft(null)
-              setView('list')
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            className="primary-button"
-            type="button"
-            disabled={!editDirty || isSaving}
-            onClick={() =>
-              void saveDraft(editingInvoice, editDraft, (saved) => {
-                setEditingInvoice(saved)
-                setEditDraft(toDraft(saved))
-                setInvoices((current) =>
-                  current.map((invoice) =>
-                    invoice.id === saved.id ? saved : invoice,
-                  ),
-                )
-              })
-            }
-          >
-            {isSaving ? 'Saving…' : 'Save changes'}
-          </button>
-        </div>
-      </section>
-    )
-  }
 
   return (
     <section
@@ -349,17 +167,6 @@ export function InvoiceAnalyzer() {
         <p>
           Upload an invoice and extract its essential billing details.
         </p>
-      </div>
-
-      <div className="form-actions form-actions-split">
-        <button
-          className="secondary-button"
-          type="button"
-          disabled={isLoading}
-          onClick={() => void handleShowInvoices()}
-        >
-          Show uploaded invoices
-        </button>
       </div>
 
       <label className="visually-hidden" htmlFor="invoice-file">
@@ -453,12 +260,7 @@ export function InvoiceAnalyzer() {
               className="primary-button"
               type="button"
               disabled={!analyzedDirty || isSaving}
-              onClick={() =>
-                void saveDraft(result, draft, (saved) => {
-                  setResult(saved)
-                  setDraft(toDraft(saved))
-                })
-              }
+              onClick={() => void handleUpdate()}
             >
               {isSaving ? 'Updating…' : 'Update'}
             </button>

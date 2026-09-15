@@ -1,34 +1,50 @@
 import { useRef, useState, type KeyboardEvent } from 'react'
 import { ChatPanel } from './components/ChatPanel'
 import { InvoiceAnalyzer } from './components/InvoiceAnalyzer'
+import { InvoiceList } from './components/InvoiceList'
+
+type AppTab = 'chat' | 'uploader' | 'invoices'
+
+const tabs: Array<{ id: AppTab; label: string; panelId: string }> = [
+  { id: 'chat', label: 'Chat', panelId: 'chat-panel' },
+  { id: 'uploader', label: 'Invoice uploader', panelId: 'uploader-panel' },
+  { id: 'invoices', label: 'Invoices', panelId: 'invoices-panel' },
+]
 
 function App() {
-  const [activeTool, setActiveTool] = useState<'chat' | 'invoice'>('chat')
+  const [activeTab, setActiveTab] = useState<AppTab>('chat')
   const chatTab = useRef<HTMLButtonElement>(null)
-  const invoiceTab = useRef<HTMLButtonElement>(null)
+  const uploaderTab = useRef<HTMLButtonElement>(null)
+  const invoicesTab = useRef<HTMLButtonElement>(null)
+  const tabRefs = {
+    chat: chatTab,
+    uploader: uploaderTab,
+    invoices: invoicesTab,
+  }
 
-  function selectTool(tool: 'chat' | 'invoice') {
-    setActiveTool(tool)
-    const target = tool === 'chat' ? chatTab.current : invoiceTab.current
-    target?.focus()
+  function selectTab(tab: AppTab) {
+    setActiveTab(tab)
+    tabRefs[tab].current?.focus()
   }
 
   function handleTabKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
-    let nextTool: 'chat' | 'invoice' | null = null
+    const order: AppTab[] = ['chat', 'uploader', 'invoices']
+    const index = order.indexOf(activeTab)
+    let nextTab: AppTab | null = null
 
     if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
-      nextTool = activeTool === 'chat' ? 'invoice' : 'chat'
+      nextTab = order[(index + 1) % order.length]
     } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
-      nextTool = activeTool === 'chat' ? 'invoice' : 'chat'
+      nextTab = order[(index - 1 + order.length) % order.length]
     } else if (event.key === 'Home') {
-      nextTool = 'chat'
+      nextTab = 'chat'
     } else if (event.key === 'End') {
-      nextTool = 'invoice'
+      nextTab = 'invoices'
     }
 
-    if (nextTool) {
+    if (nextTab) {
       event.preventDefault()
-      selectTool(nextTool)
+      selectTab(nextTab)
     }
   }
 
@@ -48,64 +64,49 @@ function App() {
       </header>
 
       <main>
-        <section className="hero-copy" aria-labelledby="page-title">
-          <p className="eyebrow">AI-powered operations</p>
-          <h1 id="page-title">
-            Clear answers.
-            <br />
-            Structured invoices.
-          </h1>
-          <p>
-            Talk to your configured AI assistant or turn an invoice into
-            useful, structured data.
-          </p>
-        </section>
-
         <section className="workspace" aria-label="AI tools">
           <div className="tabs" role="tablist" aria-label="Choose an AI tool">
-            <button
-              ref={chatTab}
-              id="chat-tab"
-              type="button"
-              role="tab"
-              aria-selected={activeTool === 'chat'}
-              aria-controls="chat-panel"
-              tabIndex={activeTool === 'chat' ? 0 : -1}
-              onClick={() => setActiveTool('chat')}
-              onKeyDown={handleTabKeyDown}
-            >
-              Chat
-            </button>
-            <button
-              ref={invoiceTab}
-              id="invoice-tab"
-              type="button"
-              role="tab"
-              aria-selected={activeTool === 'invoice'}
-              aria-controls="invoice-panel"
-              tabIndex={activeTool === 'invoice' ? 0 : -1}
-              onClick={() => setActiveTool('invoice')}
-              onKeyDown={handleTabKeyDown}
-            >
-              Invoice analyzer
-            </button>
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                ref={tabRefs[tab.id]}
+                id={`${tab.id}-tab`}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === tab.id}
+                aria-controls={tab.panelId}
+                tabIndex={activeTab === tab.id ? 0 : -1}
+                onClick={() => setActiveTab(tab.id)}
+                onKeyDown={handleTabKeyDown}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
 
           <div
             id="chat-panel"
             role="tabpanel"
             aria-labelledby="chat-tab"
-            hidden={activeTool !== 'chat'}
+            hidden={activeTab !== 'chat'}
           >
             <ChatPanel />
           </div>
           <div
-            id="invoice-panel"
+            id="uploader-panel"
             role="tabpanel"
-            aria-labelledby="invoice-tab"
-            hidden={activeTool !== 'invoice'}
+            aria-labelledby="uploader-tab"
+            hidden={activeTab !== 'uploader'}
           >
             <InvoiceAnalyzer />
+          </div>
+          <div
+            id="invoices-panel"
+            role="tabpanel"
+            aria-labelledby="invoices-tab"
+            hidden={activeTab !== 'invoices'}
+          >
+            <InvoiceList active={activeTab === 'invoices'} />
           </div>
         </section>
       </main>
