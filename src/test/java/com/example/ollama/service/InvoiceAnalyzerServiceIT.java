@@ -7,6 +7,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -29,10 +30,16 @@ import static org.assertj.core.api.Assertions.assertThat;
  * stays readable and the fixtures are easy to add to.
  */
 @SpringBootTest
+@ActiveProfiles("test")
 class InvoiceAnalyzerServiceIT {
 
 	@Autowired
 	private InvoiceAnalyzerService invoiceAnalyzerService;
+
+	@Test
+	void testEnvironment() {
+		System.out.println("OPENAI_API_KEY = " + System.getenv("OPENAI_API_KEY"));
+	}
 
 	@ParameterizedTest
 	@CsvSource({
