@@ -18,9 +18,16 @@ describe('InvoiceAnalyzer', () => {
   it('uploads the selected file and renders the invoice fields', async () => {
     analyzeInvoiceMock.mockResolvedValue({
       supplier: 'Acme Supplies',
+      supplierStreet: 'Main Street',
+      supplierStreetNumber: '42A',
+      supplierCity: 'Amsterdam',
+      supplierPostalCode: '1012 AB',
       invoiceNumber: 'INV-2026-42',
+      invoiceDate: '2024-03-12',
       amount: 1250.5,
       currency: 'EUR',
+      uploadedDate: '2026-09-15T10:30:00Z',
+      paymentReceivedDate: null,
     })
     const user = userEvent.setup()
     render(<InvoiceAnalyzer />)
@@ -38,8 +45,13 @@ describe('InvoiceAnalyzer', () => {
 
     expect(analyzeInvoiceMock).toHaveBeenCalledWith(file)
     expect(await screen.findByText('Acme Supplies')).toBeInTheDocument()
+    expect(screen.getByText('Main Street 42A')).toBeInTheDocument()
+    expect(screen.getByText('1012 AB Amsterdam')).toBeInTheDocument()
     expect(screen.getByText('INV-2026-42')).toBeInTheDocument()
+    expect(screen.getByText('2024-03-12')).toBeInTheDocument()
     expect(screen.getByText('EUR 1,250.50')).toBeInTheDocument()
+    expect(screen.getByText('2026-09-15T10:30:00Z')).toBeInTheDocument()
+    expect(screen.getByText('Pending')).toBeInTheDocument()
   })
 
   it('accepts a supported file by drag and drop', () => {
@@ -107,9 +119,16 @@ describe('InvoiceAnalyzer', () => {
     let resolveAnalysis:
       | ((result: {
           supplier: string
+          supplierStreet: string
+          supplierStreetNumber: string
+          supplierCity: string
+          supplierPostalCode: string
           invoiceNumber: string
+          invoiceDate: string
           amount: number
           currency: string
+          uploadedDate: string
+          paymentReceivedDate: string | null
         }) => void)
       | undefined
     analyzeInvoiceMock.mockReturnValue(
@@ -132,9 +151,16 @@ describe('InvoiceAnalyzer', () => {
     )
     resolveAnalysis?.({
       supplier: 'First Supplier',
+      supplierStreet: 'First Street',
+      supplierStreetNumber: '1',
+      supplierCity: 'First City',
+      supplierPostalCode: '1000 AA',
       invoiceNumber: 'FIRST-1',
+      invoiceDate: '2024-01-01',
       amount: 10,
       currency: 'EUR',
+      uploadedDate: '2026-09-15T10:30:00Z',
+      paymentReceivedDate: null,
     })
 
     expect(await screen.findByText('second.txt')).toBeInTheDocument()

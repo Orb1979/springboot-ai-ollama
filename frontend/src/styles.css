@@ -403,6 +403,10 @@ textarea:focus {
   background: #fff;
 }
 
+.invoice-grid .invoice-grid-wide {
+  grid-column: 1 / -1;
+}
+
 .invoice-grid dt {
   margin-bottom: 5px;
   color: var(--muted);
@@ -411,6 +415,8 @@ textarea:focus {
 }
 
 .invoice-grid dd {
+  display: grid;
+  gap: 2px;
   overflow-wrap: anywhere;
   margin: 0;
   font-weight: 700;
