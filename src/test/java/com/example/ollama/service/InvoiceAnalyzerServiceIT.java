@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -43,14 +44,19 @@ class InvoiceAnalyzerServiceIT {
 
 	@ParameterizedTest
 	@CsvSource({
-			// filename,            expectedSupplierContains, expectedInvoiceNumber, expectedAmount, expectedCurrency
-			"simple-invoice.txt,    Acme,                     INV-001,               99.90,          EUR",
-			"dutch-invoice.txt,     Jansen,                   FACT-2024-0088,        249.00,         EUR"
+			// filename, expected supplier, street, number, city, postal code, invoice number, invoice date, amount, currency
+			"simple-invoice.txt, Acme, Industrial Way, 123, Springfield, 62704, INV-001, 2024-03-12, 99.90, EUR",
+			"dutch-invoice.txt, Jansen, Fabrieksstraat, 22, Drachten, 9203 AB, FACT-2024-0088, 2024-05-14, 249.00, EUR"
 	})
 	void analyzeInvoice_realModel(
 			String fileName,
 			String expectedSupplierContains,
+			String expectedStreetContains,
+			String expectedStreetNumber,
+			String expectedCity,
+			String expectedPostalCode,
 			String expectedInvoiceNumber,
+			LocalDate expectedInvoiceDate,
 			String expectedAmount,
 			String expectedCurrency) throws IOException {
 
@@ -60,9 +66,16 @@ class InvoiceAnalyzerServiceIT {
 		InvoiceResponse response = invoiceAnalyzerService.analyzeInvoice(file);
 
 		assertThat(response.supplier()).containsIgnoringCase(expectedSupplierContains);
+		assertThat(response.supplierStreet()).containsIgnoringCase(expectedStreetContains);
+		assertThat(response.supplierStreetNumber()).containsIgnoringCase(expectedStreetNumber);
+		assertThat(response.supplierCity()).containsIgnoringCase(expectedCity);
+		assertThat(response.supplierPostalCode()).containsIgnoringCase(expectedPostalCode);
 		assertThat(response.invoiceNumber()).isEqualToIgnoringCase(expectedInvoiceNumber);
+		assertThat(response.invoiceDate()).isEqualTo(expectedInvoiceDate);
 		assertThat(response.amount()).isEqualByComparingTo(new BigDecimal(expectedAmount));
 		assertThat(response.currency()).isEqualToIgnoringCase(expectedCurrency);
+		assertThat(response.uploadedDate()).isNotNull();
+		assertThat(response.paymentReceivedDate()).isNull();
 	}
 
 	@Test
