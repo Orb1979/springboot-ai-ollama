@@ -71,6 +71,33 @@ describe('InvoiceAnalyzer', () => {
     ).toBeEnabled()
   })
 
+  it('renders the payment received date when present', async () => {
+    analyzeInvoiceMock.mockResolvedValue({
+      supplier: 'Acme Supplies',
+      supplierStreet: 'Main Street',
+      supplierStreetNumber: '42A',
+      supplierCity: 'Amsterdam',
+      supplierPostalCode: '1012 AB',
+      invoiceNumber: 'INV-2026-42',
+      invoiceDate: '2024-03-12',
+      amount: 1250.5,
+      currency: 'EUR',
+      uploadedDate: '2026-09-15T10:30:00Z',
+      paymentReceivedDate: '2026-09-20',
+    })
+    const user = userEvent.setup()
+    render(<InvoiceAnalyzer />)
+
+    await user.upload(
+      screen.getByLabelText('Invoice file'),
+      new File(['invoice'], 'invoice.pdf', { type: 'application/pdf' }),
+    )
+    await user.click(screen.getByRole('button', { name: 'Analyze invoice' }))
+
+    expect(await screen.findByText('2026-09-20')).toBeInTheDocument()
+    expect(screen.queryByText('Pending')).not.toBeInTheDocument()
+  })
+
   it('rejects an unsupported dropped file', () => {
     render(<InvoiceAnalyzer />)
 

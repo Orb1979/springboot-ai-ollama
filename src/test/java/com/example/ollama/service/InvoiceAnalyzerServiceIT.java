@@ -66,10 +66,10 @@ class InvoiceAnalyzerServiceIT {
 		InvoiceResponse response = invoiceAnalyzerService.analyzeInvoice(file);
 
 		assertThat(response.supplier()).containsIgnoringCase(expectedSupplierContains);
-		assertThat(response.supplierStreet()).containsIgnoringCase(expectedStreetContains);
-		assertThat(response.supplierStreetNumber()).containsIgnoringCase(expectedStreetNumber);
-		assertThat(response.supplierCity()).containsIgnoringCase(expectedCity);
-		assertThat(response.supplierPostalCode()).containsIgnoringCase(expectedPostalCode);
+		assertThat(response.supplierStreet()).isEqualToIgnoringCase(expectedStreetContains);
+		assertThat(response.supplierStreetNumber()).isEqualToIgnoringCase(expectedStreetNumber);
+		assertThat(response.supplierCity()).isEqualToIgnoringCase(expectedCity);
+		assertThat(response.supplierPostalCode()).isEqualToIgnoringCase(expectedPostalCode);
 		assertThat(response.invoiceNumber()).isEqualToIgnoringCase(expectedInvoiceNumber);
 		assertThat(response.invoiceDate()).isEqualTo(expectedInvoiceDate);
 		assertThat(response.amount()).isEqualByComparingTo(new BigDecimal(expectedAmount));

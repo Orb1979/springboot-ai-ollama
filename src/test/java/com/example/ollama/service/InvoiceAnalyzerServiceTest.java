@@ -16,8 +16,10 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.mock.web.MockMultipartFile;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -93,6 +95,23 @@ class InvoiceAnalyzerServiceTest {
 	}
 
 	@Test
+	void analyzeInvoice_capturesUploadedDateBeforeExtractionStarts() throws Exception {
+		AtomicReference<Instant> extractionStarted = new AtomicReference<>();
+		when(fileTypeDetector.detect(any())).thenReturn(FileType.TEXT);
+		when(textExtractor.supports(FileType.TEXT)).thenReturn(true);
+		when(textExtractor.extract(any())).thenAnswer(invocation -> {
+			extractionStarted.set(Instant.now());
+			return "Invoice text content";
+		});
+		mockChatClientChain(validInvoiceJson());
+
+		InvoiceResponse response = invoiceAnalyzerService.analyzeInvoice(createTextFile());
+
+		assertThat(response.uploadedDate())
+				.isBeforeOrEqualTo(extractionStarted.get());
+	}
+
+	@Test
 	void analyzeInvoice_noMatchingExtractor_throwsInvoiceAnalyzeException() {
 		MockMultipartFile file = new MockMultipartFile(
 				"file",
@@ -146,10 +165,11 @@ class InvoiceAnalyzerServiceTest {
 
 		invoiceAnalyzerService.analyzeInvoice(file);
 
-		verify(requestSpec).system(anyString());
-		verify(requestSpec).system(org.mockito.ArgumentMatchers.contains(
-						"Extract the following information from this invoice"
-				));
+		ArgumentCaptor<String> systemPrompt = ArgumentCaptor.forClass(String.class);
+		verify(requestSpec).system(systemPrompt.capture());
+		assertThat(systemPrompt.getValue())
+				.contains("Extract the following information from this invoice")
+				.doesNotContain("%s");
 	}
 
 	@Test

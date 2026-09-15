@@ -47,9 +47,6 @@ public class InvoiceAnalyzerService {
 			- Use the final total payable amount.
 			- Do not use subtotal, VAT, or amount already paid.
 			- If a value cannot be determined, return null.
-			
-			Invoice:
-			%s
 			""";
 	private static final int MAX_ATTEMPTS = 3;
 	private static final String correctionSuffix = """
@@ -74,6 +71,7 @@ public class InvoiceAnalyzerService {
 	}
 
 	public InvoiceResponse analyzeInvoice(MultipartFile file) throws IOException {
+		Instant uploadedDate = Instant.now();
 		byte[] fileBytes = file.getBytes();
 		FileType fileType = fileTypeDetector.detect(fileBytes);
 
@@ -81,7 +79,7 @@ public class InvoiceAnalyzerService {
 		String invoiceText = textExtractor.extract(fileBytes);
 
 		InvoiceExtractionResponse extraction = analyzeInvoiceText(invoiceText, MAX_ATTEMPTS);
-		InvoiceResponse response = toResponse(extraction);
+		InvoiceResponse response = toResponse(extraction, uploadedDate);
 		invoiceResponseValidator.validate(response);
 		saveInvoice(response);
 		return response;
@@ -131,7 +129,9 @@ public class InvoiceAnalyzerService {
 		throw new InvoiceAnalyzeException("Model did not return valid JSON after " + retries + " attempts", lastFailure);
 	}
 
-	private InvoiceResponse toResponse(InvoiceExtractionResponse extraction) {
+	private InvoiceResponse toResponse(
+			InvoiceExtractionResponse extraction,
+			Instant uploadedDate) {
 		return new InvoiceResponse(
 				extraction.supplier(),
 				extraction.supplierStreet(),
@@ -142,7 +142,7 @@ public class InvoiceAnalyzerService {
 				extraction.invoiceDate(),
 				extraction.amount(),
 				extraction.currency(),
-				Instant.now(),
+				uploadedDate,
 				null
 		);
 	}
