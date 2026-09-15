@@ -136,7 +136,7 @@ class InvoiceAnalyzerServiceTest {
 				new BigDecimal("150.00"),
 				"USD",
 				Instant.parse("2026-01-01T00:00:00Z"),
-				LocalDate.of(2024, 5, 1),
+				Instant.parse("2024-05-01T11:22:00Z"),
 				null
 		);
 
@@ -145,7 +145,7 @@ class InvoiceAnalyzerServiceTest {
 		assertThat(result.supplier()).isEqualTo("Updated Corp");
 		assertThat(result.supplierStreet()).isEqualTo("New Street");
 		assertThat(result.uploadedDate()).isEqualTo(Instant.parse("2026-09-15T09:00:00Z"));
-		assertThat(result.paymentReceivedDate()).isEqualTo(LocalDate.of(2024, 5, 1));
+		assertThat(result.paymentReceivedDate()).isEqualTo(Instant.parse("2024-05-01T11:22:00Z"));
 		assertThat(result.updatedDate()).isNotNull();
 		verify(invoiceResponseValidator).validate(any(InvoiceResponse.class));
 	}

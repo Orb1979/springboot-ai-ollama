@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { listInvoices, updateInvoice } from '../api/client'
 import type { InvoiceResponse } from '../api/types'
+import { formatAmountValue, formatDateTime } from './dateTimeFormat'
 import { InvoiceEditableFields } from './InvoiceEditableFields'
 import {
   isDraftDirty,
@@ -8,13 +9,6 @@ import {
   toUpdatePayload,
   type InvoiceDraft,
 } from './invoiceDraft'
-
-function formatAmount(amount: number, currency: string) {
-  return `${currency} ${new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount)}`
-}
 
 type InvoiceListProps = {
   active: boolean
@@ -177,9 +171,6 @@ export function InvoiceList({ active }: InvoiceListProps) {
               <tr>
                 <th>ID</th>
                 <th>Supplier</th>
-                <th>Street</th>
-                <th>Number</th>
-                <th>City</th>
                 <th>Postal code</th>
                 <th>Invoice number</th>
                 <th>Invoice date</th>
@@ -196,17 +187,22 @@ export function InvoiceList({ active }: InvoiceListProps) {
                 <tr key={invoice.id}>
                   <td>{invoice.id}</td>
                   <td>{invoice.supplier}</td>
-                  <td>{invoice.supplierStreet}</td>
-                  <td>{invoice.supplierStreetNumber}</td>
-                  <td>{invoice.supplierCity}</td>
                   <td>{invoice.supplierPostalCode}</td>
                   <td>{invoice.invoiceNumber}</td>
                   <td>{invoice.invoiceDate}</td>
-                  <td>{formatAmount(invoice.amount, invoice.currency)}</td>
+                  <td>{formatAmountValue(invoice.amount)}</td>
                   <td>{invoice.currency}</td>
-                  <td>{invoice.uploadedDate}</td>
-                  <td>{invoice.paymentReceivedDate ?? 'Pending'}</td>
-                  <td>{invoice.updatedDate ?? 'Not updated'}</td>
+                  <td>{formatDateTime(invoice.uploadedDate)}</td>
+                  <td>
+                    {invoice.paymentReceivedDate
+                      ? formatDateTime(invoice.paymentReceivedDate)
+                      : 'Pending'}
+                  </td>
+                  <td>
+                    {invoice.updatedDate
+                      ? formatDateTime(invoice.updatedDate)
+                      : 'Not updated'}
+                  </td>
                   <td>
                     <button
                       className="secondary-button"

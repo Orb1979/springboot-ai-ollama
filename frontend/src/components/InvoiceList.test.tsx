@@ -67,7 +67,11 @@ describe('InvoiceList', () => {
     expect(
       await screen.findByRole('heading', { name: 'Uploaded invoices' }),
     ).toBeInTheDocument()
-    expect(await screen.findByText('Rotterdam')).toBeInTheDocument()
-    expect(screen.getByText('2026-09-17T08:00:00Z')).toBeInTheDocument()
+    expect(await screen.findByText('1,250.50')).toBeInTheDocument()
+    expect(screen.getByText('2026-09-15 10:30')).toBeInTheDocument()
+    expect(screen.getByText('2026-09-17 08:00')).toBeInTheDocument()
+    expect(screen.queryByRole('columnheader', { name: 'Street' })).toBeNull()
+    expect(screen.queryByRole('columnheader', { name: 'Number' })).toBeNull()
+    expect(screen.queryByRole('columnheader', { name: 'City' })).toBeNull()
   })
 })
