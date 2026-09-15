@@ -39,16 +39,16 @@ describe('ChatPanel', () => {
     ).toBeInTheDocument()
   })
 
-  it('submits an empty string when the optional system prompt is blank', async () => {
+  it('submits an empty string when the optional system prompt is whitespace', async () => {
     sendChatMock.mockResolvedValue({ message: 'Hello!' })
     const user = userEvent.setup()
     render(<ChatPanel />)
 
-    expect(
-      screen.getByLabelText('System prompt (optional)'),
-    ).toHaveAccessibleDescription(
+    const systemPrompt = screen.getByLabelText('System prompt (optional)')
+    expect(systemPrompt).toHaveAccessibleDescription(
       'Optional. Leave blank to use the model’s default behavior.',
     )
+    await user.type(systemPrompt, '   ')
     await user.type(screen.getByLabelText('Question'), 'Hello')
     await user.click(screen.getByRole('button', { name: 'Send question' }))
 
