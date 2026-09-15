@@ -25,9 +25,12 @@ public class ConversationService {
 	}
 
 	public ConversationResponse askPromptPost(ConversationRequest conversationRequest){
-		return chatClient
-				       .prompt()
-				       .system(conversationRequest.system())
+		ChatClient.ChatClientRequestSpec prompt = chatClient.prompt();
+		if (conversationRequest.system() != null && !conversationRequest.system().isBlank()) {
+			prompt.system(conversationRequest.system());
+		}
+
+		return prompt
 				       .user(conversationRequest.question())
 				       .call()
 				       .entity(ConversationResponse.class);
