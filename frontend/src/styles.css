@@ -49,7 +49,7 @@ a:focus-visible {
 }
 
 .app-shell {
-  width: min(1180px, calc(100% - 40px));
+  width: min(1400px, calc(100% - 40px));
   margin: 0 auto;
   padding-bottom: 72px;
 }
@@ -101,17 +101,8 @@ a:focus-visible {
 }
 
 main {
-  display: grid;
-  grid-template-columns: minmax(240px, 0.72fr) minmax(520px, 1.28fr);
-  gap: clamp(36px, 7vw, 96px);
-  align-items: start;
-  padding-top: clamp(52px, 8vw, 104px);
-}
-
-.hero-copy {
-  position: sticky;
-  top: 42px;
-  padding-top: 42px;
+  display: block;
+  padding-top: clamp(28px, 5vw, 48px);
 }
 
 .eyebrow {
@@ -123,25 +114,9 @@ main {
   text-transform: uppercase;
 }
 
-.hero-copy h1 {
-  max-width: 520px;
-  margin: 0;
-  font-family: 'Manrope', sans-serif;
-  font-size: clamp(2.8rem, 5vw, 5.2rem);
-  line-height: 0.98;
-  letter-spacing: -0.055em;
-}
-
-.hero-copy > p:last-child {
-  max-width: 440px;
-  margin: 28px 0 0;
-  color: var(--muted);
-  font-size: 1.02rem;
-  line-height: 1.7;
-}
-
 .workspace {
   overflow: hidden;
+  width: 100%;
   border: 1px solid var(--line);
   border-radius: 22px;
   background: var(--paper);
@@ -150,7 +125,7 @@ main {
 
 .tabs {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 5px;
   padding: 7px;
   border-bottom: 1px solid var(--line);
@@ -543,18 +518,11 @@ textarea:focus {
 
 @media (max-width: 860px) {
   main {
+    padding-top: 28px;
+  }
+
+  .tabs {
     grid-template-columns: 1fr;
-    gap: 42px;
-    padding-top: 56px;
-  }
-
-  .hero-copy {
-    position: static;
-    padding-top: 0;
-  }
-
-  .hero-copy h1 {
-    font-size: clamp(3rem, 12vw, 5rem);
   }
 }
 

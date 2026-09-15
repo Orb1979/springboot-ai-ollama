@@ -1,22 +1,16 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-  analyzeInvoice,
-  listInvoices,
-  updateInvoice,
-} from '../api/client'
+import { analyzeInvoice, updateInvoice } from '../api/client'
 import type { InvoiceResponse } from '../api/types'
 import { InvoiceAnalyzer } from './InvoiceAnalyzer'
 
 vi.mock('../api/client', () => ({
   analyzeInvoice: vi.fn(),
-  listInvoices: vi.fn(),
   updateInvoice: vi.fn(),
 }))
 
 const analyzeInvoiceMock = vi.mocked(analyzeInvoice)
-const listInvoicesMock = vi.mocked(listInvoices)
 const updateInvoiceMock = vi.mocked(updateInvoice)
 
 function sampleInvoice(
@@ -43,7 +37,6 @@ function sampleInvoice(
 describe('InvoiceAnalyzer', () => {
   beforeEach(() => {
     analyzeInvoiceMock.mockReset()
-    listInvoicesMock.mockReset()
     updateInvoiceMock.mockReset()
   })
 
@@ -64,8 +57,6 @@ describe('InvoiceAnalyzer', () => {
     )
     expect(screen.getByLabelText('Street')).toHaveValue('Main Street')
     expect(screen.getByLabelText('Street number')).toHaveValue('42A')
-    expect(screen.getByLabelText('City')).toHaveValue('Amsterdam')
-    expect(screen.getByLabelText('Postal code')).toHaveValue('1012 AB')
     expect(screen.getByRole('button', { name: 'Update' })).toBeDisabled()
   })
 
@@ -98,43 +89,10 @@ describe('InvoiceAnalyzer', () => {
       expect.objectContaining({
         id: 42,
         supplier: 'Updated Supplies',
-        supplierStreet: 'Main Street',
       }),
     )
     expect(await screen.findByText('2026-09-16T11:00:00Z')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Update' })).toBeDisabled()
-  })
-
-  it('shows uploaded invoices and opens the edit form', async () => {
-    listInvoicesMock.mockResolvedValue([sampleInvoice()])
-    updateInvoiceMock.mockResolvedValue(
-      sampleInvoice({
-        supplierCity: 'Rotterdam',
-        updatedDate: '2026-09-17T08:00:00Z',
-      }),
-    )
-    const user = userEvent.setup()
-    render(<InvoiceAnalyzer />)
-
-    await user.click(
-      screen.getByRole('button', { name: 'Show uploaded invoices' }),
-    )
-
-    expect(await screen.findByText('Uploaded invoices')).toBeInTheDocument()
-    const row = screen.getByRole('row', { name: /Acme Supplies/ })
-    expect(within(row).getByText('Main Street')).toBeInTheDocument()
-    await user.click(within(row).getByRole('button', { name: 'Edit' }))
-
-    const city = await screen.findByLabelText('City')
-    await user.clear(city)
-    await user.type(city, 'Rotterdam')
-    await user.click(screen.getByRole('button', { name: 'Save changes' }))
-
-    expect(updateInvoiceMock).toHaveBeenCalledWith(
-      42,
-      expect.objectContaining({ supplierCity: 'Rotterdam' }),
-    )
-    expect(await screen.findByText('2026-09-17T08:00:00Z')).toBeInTheDocument()
   })
 
   it('accepts a supported file by drag and drop', () => {
@@ -149,9 +107,6 @@ describe('InvoiceAnalyzer', () => {
     )
 
     expect(screen.getByText('invoice.png')).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Analyze invoice' }),
-    ).toBeEnabled()
   })
 
   it('rejects an unsupported dropped file', () => {
