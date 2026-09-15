@@ -30,6 +30,37 @@ export OPENAI_API_KEY=sk-...
 curl http://localhost:8080/ai/chat/test
 ```
 
+## Frontend
+
+The React and TypeScript frontend lives in `frontend/` and runs separately
+from Spring Boot. Start the backend on port 8080 first:
+
+```bash
+export OPENAI_API_KEY=sk-...
+./gradlew bootRun
+```
+
+In a second terminal, install and start the frontend:
+
+```bash
+cd frontend
+npm install
+npm start
+```
+
+Open the URL shown by Vite (by default `http://localhost:5173`). The Vite
+development server proxies `/ai` requests to Spring Boot at
+`http://localhost:8080`.
+
+Run frontend checks with:
+
+```bash
+cd frontend
+npm test
+npm run lint
+npm run build
+```
+
 ```
 ─────────────────────────────────────────
  1. Prompt structure
