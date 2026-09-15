@@ -57,7 +57,8 @@ export function ChatPanel() {
         <p className="eyebrow">Conversation</p>
         <h2 id="chat-heading">Ask the AI</h2>
         <p>
-          Define the assistant&apos;s role, then ask a focused question.
+          Optionally define the assistant&apos;s role, then ask a focused
+          question.
         </p>
       </div>
 
@@ -67,7 +68,7 @@ export function ChatPanel() {
         aria-busy={isLoading}
       >
         <div className="field">
-          <label htmlFor="system-prompt">System prompt</label>
+          <label htmlFor="system-prompt">System prompt (optional)</label>
           <textarea
             id="system-prompt"
             aria-describedby="system-prompt-hint"
@@ -77,7 +78,7 @@ export function ChatPanel() {
             rows={5}
           />
           <small id="system-prompt-hint">
-            Describe who the AI is and how it should respond.
+            Optional. Leave blank to use the model’s default behavior.
           </small>
         </div>
 
