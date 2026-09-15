@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { listInvoices, updateInvoice } from '../api/client'
 import type { InvoiceResponse } from '../api/types'
-import { formatAmountValue, formatDateTime } from './dateTimeFormat'
+import { InvoiceDataTable } from './InvoiceDataTable'
 import { InvoiceEditableFields } from './InvoiceEditableFields'
 import {
   isDraftDirty,
@@ -165,61 +165,7 @@ export function InvoiceList({ active }: InvoiceListProps) {
         </p>
       )}
       {!isLoading && (
-        <div className="invoice-table-wrap">
-          <table className="invoice-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Supplier</th>
-                <th>Postal code</th>
-                <th>Invoice number</th>
-                <th>Invoice date</th>
-                <th>Amount</th>
-                <th>Currency</th>
-                <th>Uploaded</th>
-                <th>Payment received</th>
-                <th>Updated</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {invoices.map((invoice) => (
-                <tr key={invoice.id}>
-                  <td>{invoice.id}</td>
-                  <td>{invoice.supplier}</td>
-                  <td>{invoice.supplierPostalCode}</td>
-                  <td>{invoice.invoiceNumber}</td>
-                  <td>{invoice.invoiceDate}</td>
-                  <td>{formatAmountValue(invoice.amount)}</td>
-                  <td>{invoice.currency}</td>
-                  <td>{formatDateTime(invoice.uploadedDate)}</td>
-                  <td>
-                    {invoice.paymentReceivedDate
-                      ? formatDateTime(invoice.paymentReceivedDate)
-                      : 'Pending'}
-                  </td>
-                  <td>
-                    {invoice.updatedDate
-                      ? formatDateTime(invoice.updatedDate)
-                      : 'Not updated'}
-                  </td>
-                  <td>
-                    <button
-                      className="secondary-button"
-                      type="button"
-                      onClick={() => openEdit(invoice)}
-                    >
-                      Edit
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {invoices.length === 0 && (
-            <p className="empty-state">No invoices have been uploaded yet.</p>
-          )}
-        </div>
+        <InvoiceDataTable invoices={invoices} onEdit={openEdit} />
       )}
     </section>
   )
