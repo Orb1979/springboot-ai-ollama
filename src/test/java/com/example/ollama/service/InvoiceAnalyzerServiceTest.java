@@ -2,6 +2,7 @@ package com.example.ollama.service;
 
 import com.example.ollama.domain.FileType;
 import com.example.ollama.dto.InvoiceResponse;
+import com.example.ollama.entity.Invoice;
 import com.example.ollama.exception.InvoiceAnalyzeException;
 import com.example.ollama.repo.InvoiceRepository;
 import com.example.ollama.service.extractors.TextExtractor;
@@ -15,6 +16,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.mock.web.MockMultipartFile;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,21 +54,42 @@ class InvoiceAnalyzerServiceTest {
 	@Test
 	void analyzeInvoice_happyPath_extractsValidatesAndSaves() throws Exception {
 		MockMultipartFile file = createTextFile();
-		InvoiceResponse expected = new InvoiceResponse(
-				"Acme Corp",
-				"INV-001",
-				new BigDecimal("99.90"),
-				"EUR"
-		);
 		String validJson = validInvoiceJson();
 		givenValidFile();
 		mockChatClientChain(validJson);
 
 		InvoiceResponse actual = invoiceAnalyzerService.analyzeInvoice(file);
 
-		assertThat(actual).isEqualTo(expected);
-		verify(invoiceResponseValidator).validate(expected);
+		assertExpectedInvoice(actual);
+		verify(invoiceResponseValidator).validate(actual);
 		verify(invoiceRepository).save(any());
+	}
+
+	@Test
+	void analyzeInvoice_mapsExtractedAndServerFieldsToSavedInvoice() throws Exception {
+		givenValidFile();
+		mockChatClientChain(validInvoiceJson());
+
+		InvoiceResponse response = invoiceAnalyzerService.analyzeInvoice(createTextFile());
+
+		assertThat(response.supplierStreet()).isEqualTo("Main Street");
+		assertThat(response.supplierStreetNumber()).isEqualTo("42A");
+		assertThat(response.supplierCity()).isEqualTo("Amsterdam");
+		assertThat(response.supplierPostalCode()).isEqualTo("1012 AB");
+		assertThat(response.invoiceDate()).isEqualTo(LocalDate.of(2024, 3, 12));
+		assertThat(response.uploadedDate()).isNotNull();
+		assertThat(response.paymentReceivedDate()).isNull();
+
+		ArgumentCaptor<Invoice> invoiceCaptor = ArgumentCaptor.forClass(Invoice.class);
+		verify(invoiceRepository).save(invoiceCaptor.capture());
+		Invoice savedInvoice = invoiceCaptor.getValue();
+		assertThat(savedInvoice.getSupplierStreet()).isEqualTo("Main Street");
+		assertThat(savedInvoice.getSupplierStreetNumber()).isEqualTo("42A");
+		assertThat(savedInvoice.getSupplierCity()).isEqualTo("Amsterdam");
+		assertThat(savedInvoice.getSupplierPostalCode()).isEqualTo("1012 AB");
+		assertThat(savedInvoice.getInvoiceDate()).isEqualTo(LocalDate.of(2024, 3, 12));
+		assertThat(savedInvoice.getUploadedDate()).isEqualTo(response.uploadedDate());
+		assertThat(savedInvoice.getPaymentReceivedDate()).isNull();
 	}
 
 	@Test
@@ -132,22 +155,16 @@ class InvoiceAnalyzerServiceTest {
 	@Test
 	void analyzeInvoice_invalidJsonThenValidJson_retriesAndSucceeds() throws Exception {
 		MockMultipartFile file = createTextFile();
-		InvoiceResponse expected = new InvoiceResponse(
-				"Acme Corp",
-				"INV-001",
-				new BigDecimal("99.90"),
-				"EUR"
-		);
 		givenValidFile();
 
 		mockChatClientChain("THIS IS NOT VALID JSON", validInvoiceJson());
 
 		InvoiceResponse actual = invoiceAnalyzerService.analyzeInvoice(file);
 
-		assertThat(actual).isEqualTo(expected);
+		assertExpectedInvoice(actual);
 
 		verify(callResponseSpec, times(2)).content();
-		verify(invoiceResponseValidator).validate(expected);
+		verify(invoiceResponseValidator).validate(actual);
 		verify(invoiceRepository).save(any());
 	}
 
@@ -202,25 +219,24 @@ class InvoiceAnalyzerServiceTest {
         ```json
         {
           "supplier": "Acme Corp",
+          "supplierStreet": "Main Street",
+          "supplierStreetNumber": "42A",
+          "supplierCity": "Amsterdam",
+          "supplierPostalCode": "1012 AB",
           "invoiceNumber": "INV-001",
+          "invoiceDate": "2024-03-12",
           "amount": 99.90,
           "currency": "EUR"
         }
         ```
         """;
-		InvoiceResponse expected = new InvoiceResponse(
-				"Acme Corp",
-				"INV-001",
-				new BigDecimal("99.90"),
-				"EUR"
-		);
 		mockChatClientChain(wrappedJson);
 		InvoiceResponse actual = invoiceAnalyzerService.analyzeInvoice(file);
 
-		assertThat(actual).isEqualTo(expected);
+		assertExpectedInvoice(actual);
 
 		verify(callResponseSpec, times(1)).content();
-		verify(invoiceResponseValidator).validate(expected);
+		verify(invoiceResponseValidator).validate(actual);
 		verify(invoiceRepository).save(any());
 	}
 
@@ -232,24 +248,23 @@ class InvoiceAnalyzerServiceTest {
         Here is the invoice information:
         {
           "supplier": "Acme Corp",
+          "supplierStreet": "Main Street",
+          "supplierStreetNumber": "42A",
+          "supplierCity": "Amsterdam",
+          "supplierPostalCode": "1012 AB",
           "invoiceNumber": "INV-001",
+          "invoiceDate": "2024-03-12",
           "amount": 99.90,
           "currency": "EUR"
         }
         Hope this helps!
         """;
-		InvoiceResponse expected = new InvoiceResponse(
-				"Acme Corp",
-				"INV-001",
-				new BigDecimal("99.90"),
-				"EUR"
-		);
 		mockChatClientChain(responseWithExtraText);
 
 		InvoiceResponse actual = invoiceAnalyzerService.analyzeInvoice(file);
 
-		assertThat(actual).isEqualTo(expected);
-		verify(invoiceResponseValidator).validate(expected);
+		assertExpectedInvoice(actual);
+		verify(invoiceResponseValidator).validate(actual);
 		verify(invoiceRepository).save(any());
 	}
 
@@ -299,10 +314,29 @@ class InvoiceAnalyzerServiceTest {
 		return """
         {
           "supplier": "Acme Corp",
+          "supplierStreet": "Main Street",
+          "supplierStreetNumber": "42A",
+          "supplierCity": "Amsterdam",
+          "supplierPostalCode": "1012 AB",
           "invoiceNumber": "INV-001",
+          "invoiceDate": "2024-03-12",
           "amount": 99.90,
           "currency": "EUR"
         }
         """;
+	}
+
+	private void assertExpectedInvoice(InvoiceResponse response) {
+		assertThat(response.supplier()).isEqualTo("Acme Corp");
+		assertThat(response.supplierStreet()).isEqualTo("Main Street");
+		assertThat(response.supplierStreetNumber()).isEqualTo("42A");
+		assertThat(response.supplierCity()).isEqualTo("Amsterdam");
+		assertThat(response.supplierPostalCode()).isEqualTo("1012 AB");
+		assertThat(response.invoiceNumber()).isEqualTo("INV-001");
+		assertThat(response.invoiceDate()).isEqualTo(LocalDate.of(2024, 3, 12));
+		assertThat(response.amount()).isEqualByComparingTo("99.90");
+		assertThat(response.currency()).isEqualTo("EUR");
+		assertThat(response.uploadedDate()).isNotNull();
+		assertThat(response.paymentReceivedDate()).isNull();
 	}
 }

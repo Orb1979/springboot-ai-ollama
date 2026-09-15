@@ -1,6 +1,7 @@
 package com.example.ollama.service;
 
 import com.example.ollama.dto.InvoiceResponse;
+import com.example.ollama.dto.InvoiceExtractionResponse;
 import com.example.ollama.entity.Invoice;
 import com.example.ollama.exception.InvoiceAnalyzeException;
 import com.example.ollama.repo.InvoiceRepository;
@@ -14,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.example.ollama.domain.FileType;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
 
 @Log4j2
@@ -29,7 +31,12 @@ public class InvoiceAnalyzerService {
 			Extract the following information from this invoice:
 			
 			- supplier: the company or person issuing the invoice
+			- supplierStreet: the supplier street name without the house or building number
+			- supplierStreetNumber: the supplier house or building number, including any suffix
+			- supplierCity: the supplier city
+			- supplierPostalCode: the supplier postal or ZIP code
 			- invoiceNumber: the unique invoice identifier
+			- invoiceDate: the invoice issue date in ISO-8601 format (YYYY-MM-DD)
 			- amount: the final total amount that the customer must pay
 			- currency: the currency of the final payable amount
 			
@@ -50,8 +57,8 @@ public class InvoiceAnalyzerService {
     Return only valid JSON matching the schema above - no markdown code fences,
     no explanation, no text before or after the JSON object.
     """;
-	private static final BeanOutputConverter<InvoiceResponse> outputConverter =
-			new BeanOutputConverter<>(InvoiceResponse.class);
+	private static final BeanOutputConverter<InvoiceExtractionResponse> outputConverter =
+			new BeanOutputConverter<>(InvoiceExtractionResponse.class);
 
 	public InvoiceAnalyzerService(
 			@Qualifier("generalClient") ChatClient chatClient,
@@ -73,7 +80,8 @@ public class InvoiceAnalyzerService {
 		TextExtractor textExtractor =	findTextExtractor(fileType);
 		String invoiceText = textExtractor.extract(fileBytes);
 
-		InvoiceResponse response = analyzeInvoiceText(invoiceText, MAX_ATTEMPTS);
+		InvoiceExtractionResponse extraction = analyzeInvoiceText(invoiceText, MAX_ATTEMPTS);
+		InvoiceResponse response = toResponse(extraction);
 		invoiceResponseValidator.validate(response);
 		saveInvoice(response);
 		return response;
@@ -86,24 +94,10 @@ public class InvoiceAnalyzerService {
 				       .orElseThrow(() -> new InvoiceAnalyzeException("No TextExtractor found for file type: " + fileType));
 	}
 
-	// simple version without retries
-	private InvoiceResponse analyzeInvoiceText(String invoiceText) {
-		InvoiceResponse invoiceResponse = chatClient
-      .prompt()
-      .user(invoicePrompt.formatted(invoiceText))
-      .call()
-      .entity(InvoiceResponse.class);
-
-		if (invoiceResponse == null) {
-			throw new InvoiceAnalyzeException("Failed to extract invoice information");
-		}
-		return invoiceResponse;
-	}
-
 	// use Spring AI BeanOutputConverter getFormat() to generate the schema, instead of chatClient.entity()
 	// get the content first as a string with .content() because .entity() fails immediately on bad JSON,
 	// giving us no chance to inspect or react to it
-	private InvoiceResponse analyzeInvoiceText(String invoiceText, int retries) {
+	private InvoiceExtractionResponse analyzeInvoiceText(String invoiceText, int retries) {
 		String userBasePrompt = invoiceText + "\n\n" + outputConverter.getFormat();
 		String userPrompt = userBasePrompt;
 		Exception lastFailure = null;
@@ -137,6 +131,22 @@ public class InvoiceAnalyzerService {
 		throw new InvoiceAnalyzeException("Model did not return valid JSON after " + retries + " attempts", lastFailure);
 	}
 
+	private InvoiceResponse toResponse(InvoiceExtractionResponse extraction) {
+		return new InvoiceResponse(
+				extraction.supplier(),
+				extraction.supplierStreet(),
+				extraction.supplierStreetNumber(),
+				extraction.supplierCity(),
+				extraction.supplierPostalCode(),
+				extraction.invoiceNumber(),
+				extraction.invoiceDate(),
+				extraction.amount(),
+				extraction.currency(),
+				Instant.now(),
+				null
+		);
+	}
+
 	// Small local models frequently wrap their JSON in ```json ... ``` fences
 	// or add a sentence before/after it despite instructions not to.
 	// Rather than fail on that alone, take the substring between the first '{' and the last '}'
@@ -154,9 +164,16 @@ public class InvoiceAnalyzerService {
 		Invoice invoice = new Invoice(
 				null,
 				response.supplier(),
+				response.supplierStreet(),
+				response.supplierStreetNumber(),
+				response.supplierCity(),
+				response.supplierPostalCode(),
 				response.invoiceNumber(),
+				response.invoiceDate(),
 				response.amount(),
-				response.currency()
+				response.currency(),
+				response.uploadedDate(),
+				response.paymentReceivedDate()
 		);
 		invoiceRepository.save(invoice);
 	}
