@@ -8,6 +8,7 @@ export interface ConversationResponse {
 }
 
 export interface InvoiceResponse {
+  id: number
   supplier: string
   supplierStreet: string
   supplierStreetNumber: string
@@ -19,4 +20,5 @@ export interface InvoiceResponse {
   currency: string
   uploadedDate: string
   paymentReceivedDate: string | null
+  updatedDate: string | null
 }

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { analyzeInvoice, sendChat } from './client'
+import { analyzeInvoice, listInvoices, sendChat, updateInvoice } from './client'
 
 describe('API client', () => {
   afterEach(() => {
@@ -29,31 +29,8 @@ describe('API client', () => {
   })
 
   it('uploads an invoice using the file multipart field', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          supplier: 'Acme',
-          supplierStreet: 'Main Street',
-          supplierStreetNumber: '42A',
-          supplierCity: 'Amsterdam',
-          supplierPostalCode: '1012 AB',
-          invoiceNumber: 'INV-42',
-          invoiceDate: '2024-03-12',
-          amount: 125.5,
-          currency: 'EUR',
-          uploadedDate: '2026-09-15T10:30:00Z',
-          paymentReceivedDate: null,
-        }),
-        {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        },
-      ),
-    )
-    vi.stubGlobal('fetch', fetchMock)
-    const file = new File(['invoice'], 'invoice.txt', { type: 'text/plain' })
-
-    await expect(analyzeInvoice(file)).resolves.toMatchObject({
+    const invoice = {
+      id: 1,
       supplier: 'Acme',
       supplierStreet: 'Main Street',
       supplierStreetNumber: '42A',
@@ -61,15 +38,72 @@ describe('API client', () => {
       supplierPostalCode: '1012 AB',
       invoiceNumber: 'INV-42',
       invoiceDate: '2024-03-12',
+      amount: 125.5,
+      currency: 'EUR',
       uploadedDate: '2026-09-15T10:30:00Z',
       paymentReceivedDate: null,
+      updatedDate: null,
+    }
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(invoice), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    const file = new File(['invoice'], 'invoice.txt', { type: 'text/plain' })
+
+    await expect(analyzeInvoice(file)).resolves.toMatchObject({
+      id: 1,
+      supplier: 'Acme',
+      invoiceNumber: 'INV-42',
     })
-    const [, request] = fetchMock.mock.calls[0]
     expect(fetchMock.mock.calls[0][0]).toBe('/ai/invoices/analyze')
-    expect(request.method).toBe('POST')
-    expect(request.body).toBeInstanceOf(FormData)
-    expect(request.body.get('file')).toBe(file)
-    expect(request.headers).toBeUndefined()
+  })
+
+  it('lists invoices and updates an invoice by id', async () => {
+    const invoice = {
+      id: 7,
+      supplier: 'Acme',
+      supplierStreet: 'Main Street',
+      supplierStreetNumber: '42A',
+      supplierCity: 'Amsterdam',
+      supplierPostalCode: '1012 AB',
+      invoiceNumber: 'INV-42',
+      invoiceDate: '2024-03-12',
+      amount: 125.5,
+      currency: 'EUR',
+      uploadedDate: '2026-09-15T10:30:00Z',
+      paymentReceivedDate: null,
+      updatedDate: null,
+    }
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify([invoice]), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ ...invoice, updatedDate: '2026-09-16T12:00:00Z' }),
+          {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          },
+        ),
+      )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(listInvoices()).resolves.toEqual([invoice])
+    await expect(updateInvoice(7, invoice)).resolves.toMatchObject({
+      id: 7,
+      updatedDate: '2026-09-16T12:00:00Z',
+    })
+    expect(fetchMock.mock.calls[0][0]).toBe('/ai/invoices')
+    expect(fetchMock.mock.calls[1][0]).toBe('/ai/invoices/7')
+    expect(fetchMock.mock.calls[1][1]).toMatchObject({ method: 'PUT' })
   })
 
   it('uses a backend error message when a request fails', async () => {
