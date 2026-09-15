@@ -54,7 +54,11 @@ describe('ChatPanel', () => {
   it('does not submit a blank question', () => {
     render(<ChatPanel />)
 
-    fireEvent.keyDown(screen.getByLabelText('Question'), {
+    const question = screen.getByLabelText('Question')
+    expect(question).toHaveAccessibleDescription(
+      'Press Enter to send. Use Shift+Enter for a new line.',
+    )
+    fireEvent.keyDown(question, {
       key: 'Enter',
     })
 

@@ -61,30 +61,38 @@ export function ChatPanel() {
         </p>
       </div>
 
-      <form className="chat-form" onSubmit={handleSubmit}>
+      <form
+        className="chat-form"
+        onSubmit={handleSubmit}
+        aria-busy={isLoading}
+      >
         <div className="field">
           <label htmlFor="system-prompt">System prompt</label>
           <textarea
             id="system-prompt"
+            aria-describedby="system-prompt-hint"
             value={system}
             onChange={(event) => setSystem(event.target.value)}
             placeholder="You are a helpful assistant who explains invoices clearly."
             rows={5}
           />
-          <small>Describe who the AI is and how it should respond.</small>
+          <small id="system-prompt-hint">
+            Describe who the AI is and how it should respond.
+          </small>
         </div>
 
         <div className="field">
           <label htmlFor="question">Question</label>
           <textarea
             id="question"
+            aria-describedby="question-hint"
             value={question}
             onChange={(event) => setQuestion(event.target.value)}
             onKeyDown={handleQuestionKeyDown}
             placeholder="Ask your question…"
             rows={5}
           />
-          <small>
+          <small id="question-hint">
             Press Enter to send. Use Shift+Enter for a new line.
           </small>
         </div>
@@ -97,6 +105,11 @@ export function ChatPanel() {
           >
             {isLoading ? 'Sending…' : 'Send question'}
           </button>
+          {isLoading && (
+            <span className="visually-hidden" role="status">
+              Waiting for the AI response
+            </span>
+          )}
         </div>
       </form>
 

@@ -10,6 +10,18 @@ import type { InvoiceResponse } from '../api/types'
 
 const acceptedFiles =
   '.txt,text/plain,application/pdf,image/png,image/jpeg,image/gif,image/bmp,image/webp'
+const supportedMimeTypes = new Set([
+  'text/plain',
+  'application/pdf',
+  'image/png',
+  'image/jpeg',
+  'image/gif',
+  'image/bmp',
+  'image/webp',
+])
+const supportedExtension = /\.(txt|pdf|png|jpe?g|gif|bmp|webp)$/i
+const unsupportedFileMessage =
+  'Choose a TXT, PDF, PNG, JPEG, GIF, BMP, or WebP file.'
 
 function formatFileSize(bytes: number) {
   if (bytes < 1024) {
@@ -30,6 +42,7 @@ function formatAmount(amount: number, currency: string) {
 
 export function InvoiceAnalyzer() {
   const fileInput = useRef<HTMLInputElement>(null)
+  const requestId = useRef(0)
   const [file, setFile] = useState<File | null>(null)
   const [result, setResult] = useState<InvoiceResponse | null>(null)
   const [error, setError] = useState('')
@@ -40,9 +53,25 @@ export function InvoiceAnalyzer() {
     if (!nextFile) {
       return
     }
+    requestId.current += 1
+    if (
+      !supportedMimeTypes.has(nextFile.type) &&
+      !supportedExtension.test(nextFile.name)
+    ) {
+      setFile(null)
+      setResult(null)
+      setError(unsupportedFileMessage)
+      setIsLoading(false)
+      if (fileInput.current) {
+        fileInput.current.value = ''
+      }
+      return
+    }
+
     setFile(nextFile)
     setResult(null)
     setError('')
+    setIsLoading(false)
   }
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
@@ -67,25 +96,37 @@ export function InvoiceAnalyzer() {
       return
     }
 
+    const activeRequestId = ++requestId.current
     setIsLoading(true)
     setError('')
     setResult(null)
 
     try {
-      setResult(await analyzeInvoice(file))
+      const response = await analyzeInvoice(file)
+      if (activeRequestId === requestId.current) {
+        setResult(response)
+      }
     } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : 'Unable to analyze this invoice.',
-      )
+      if (activeRequestId === requestId.current) {
+        setError(
+          requestError instanceof Error
+            ? requestError.message
+            : 'Unable to analyze this invoice.',
+        )
+      }
     } finally {
-      setIsLoading(false)
+      if (activeRequestId === requestId.current) {
+        setIsLoading(false)
+      }
     }
   }
 
   return (
-    <section className="tool-panel" aria-labelledby="invoice-heading">
+    <section
+      className="tool-panel"
+      aria-labelledby="invoice-heading"
+      aria-busy={isLoading}
+    >
       <div className="panel-heading">
         <p className="eyebrow">Document intelligence</p>
         <h2 id="invoice-heading">Analyze an invoice</h2>
@@ -102,6 +143,7 @@ export function InvoiceAnalyzer() {
         id="invoice-file"
         className="visually-hidden"
         type="file"
+        tabIndex={-1}
         accept={acceptedFiles}
         onChange={handleFileChange}
       />
@@ -152,6 +194,11 @@ export function InvoiceAnalyzer() {
         >
           {isLoading ? 'Analyzing…' : 'Analyze invoice'}
         </button>
+        {isLoading && (
+          <span className="visually-hidden" role="status">
+            Analyzing the selected invoice
+          </span>
+        )}
       </div>
 
       {error && (

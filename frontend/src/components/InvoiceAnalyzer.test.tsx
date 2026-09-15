@@ -27,6 +27,10 @@ describe('InvoiceAnalyzer', () => {
     const file = new File(['invoice'], 'invoice.pdf', {
       type: 'application/pdf',
     })
+    expect(screen.getByLabelText('Invoice file')).toHaveAttribute(
+      'tabindex',
+      '-1',
+    )
 
     await user.upload(screen.getByLabelText('Invoice file'), file)
     expect(screen.getByText('invoice.pdf')).toBeInTheDocument()
@@ -55,6 +59,34 @@ describe('InvoiceAnalyzer', () => {
     ).toBeEnabled()
   })
 
+  it('rejects an unsupported dropped file', () => {
+    render(<InvoiceAnalyzer />)
+
+    fireEvent.drop(
+      screen.getByRole('button', {
+        name: 'Drop invoice file here or choose a file',
+      }),
+      {
+        dataTransfer: {
+          files: [
+            new File(['program'], 'invoice.exe', {
+              type: 'application/octet-stream',
+            }),
+          ],
+        },
+      },
+    )
+
+    expect(
+      screen.getByRole('alert', {
+        name: 'Choose a TXT, PDF, PNG, JPEG, GIF, BMP, or WebP file.',
+      }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Analyze invoice' }),
+    ).toBeDisabled()
+  })
+
   it('shows an analysis error', async () => {
     analyzeInvoiceMock.mockRejectedValue(new Error('Unsupported invoice'))
     const user = userEvent.setup()
@@ -69,5 +101,46 @@ describe('InvoiceAnalyzer', () => {
     expect(
       await screen.findByRole('alert', { name: 'Unsupported invoice' }),
     ).toBeInTheDocument()
+  })
+
+  it('ignores an analysis response after a different file is selected', async () => {
+    let resolveAnalysis:
+      | ((result: {
+          supplier: string
+          invoiceNumber: string
+          amount: number
+          currency: string
+        }) => void)
+      | undefined
+    analyzeInvoiceMock.mockReturnValue(
+      new Promise((resolve) => {
+        resolveAnalysis = resolve
+      }),
+    )
+    const user = userEvent.setup()
+    render(<InvoiceAnalyzer />)
+    const input = screen.getByLabelText('Invoice file')
+
+    await user.upload(
+      input,
+      new File(['first'], 'first.txt', { type: 'text/plain' }),
+    )
+    await user.click(screen.getByRole('button', { name: 'Analyze invoice' }))
+    await user.upload(
+      input,
+      new File(['second'], 'second.txt', { type: 'text/plain' }),
+    )
+    resolveAnalysis?.({
+      supplier: 'First Supplier',
+      invoiceNumber: 'FIRST-1',
+      amount: 10,
+      currency: 'EUR',
+    })
+
+    expect(await screen.findByText('second.txt')).toBeInTheDocument()
+    expect(screen.queryByText('First Supplier')).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Analyze invoice' }),
+    ).toBeEnabled()
   })
 })

@@ -10,8 +10,8 @@
   --muted: #667069;
   --paper: #fffdf7;
   --line: #dcd9cf;
-  --accent: #e4603a;
-  --accent-dark: #bd4526;
+  --accent: #b83f24;
+  --accent-dark: #8f2e1a;
   --green: #234f40;
 }
 
@@ -44,7 +44,7 @@ textarea:focus-visible,
 input:focus-visible,
 .drop-zone:focus-visible,
 a:focus-visible {
-  outline: 3px solid rgb(228 96 58 / 35%);
+  outline: 3px solid var(--accent-dark);
   outline-offset: 3px;
 }
 
@@ -236,13 +236,14 @@ textarea {
 }
 
 textarea::placeholder {
-  color: #9a9f9a;
+  color: #68716b;
 }
 
 textarea:focus {
   border-color: var(--accent);
-  outline: 0;
-  box-shadow: 0 0 0 3px rgb(228 96 58 / 10%);
+  outline: 3px solid var(--accent-dark);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgb(184 63 36 / 10%);
 }
 
 .form-actions {
@@ -257,7 +258,7 @@ textarea:focus {
   border-radius: 10px;
   color: #fff;
   background: var(--accent);
-  box-shadow: 0 9px 20px rgb(228 96 58 / 20%);
+  box-shadow: 0 9px 20px rgb(184 63 36 / 20%);
   cursor: pointer;
   font-weight: 700;
   transition:
@@ -317,7 +318,7 @@ textarea:focus {
   place-items: center;
   border-radius: 50%;
   color: var(--accent-dark);
-  background: rgb(228 96 58 / 11%);
+  background: rgb(184 63 36 / 11%);
   font-size: 1.35rem;
 }
 

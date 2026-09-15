@@ -26,4 +26,19 @@ describe('App', () => {
       screen.queryByRole('heading', { name: 'Ask the AI' }),
     ).not.toBeInTheDocument()
   })
+
+  it('supports arrow-key tab navigation with one tab stop', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    const chatTab = screen.getByRole('tab', { name: 'Chat' })
+    const invoiceTab = screen.getByRole('tab', { name: 'Invoice analyzer' })
+
+    chatTab.focus()
+    await user.keyboard('{ArrowRight}')
+
+    expect(invoiceTab).toHaveFocus()
+    expect(invoiceTab).toHaveAttribute('aria-selected', 'true')
+    expect(chatTab).toHaveAttribute('tabindex', '-1')
+    expect(invoiceTab).toHaveAttribute('tabindex', '0')
+  })
 })
