@@ -1,8 +1,10 @@
 # Spring AI + Ollama
 
-This project runs an LLM locally using Ollama.
+This project runs an LLM locally or uses openAI model
 
+Spring Boot > Spring AI > <provider> > <model>
 Spring Boot > Spring AI > Ollama > local LLM
+Spring Boot > Spring AI > openai > open ai LLM
 
 ```
 # Download a model

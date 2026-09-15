@@ -16,6 +16,6 @@ public class DebugProperties implements CommandLineRunner {
 
 	@Override
 	public void run(String... args) throws Exception {
-		// log.info("openApiKey: {}", openApiKey);
+		log.info("openApiKey: {}", openApiKey);
 	}
 }
