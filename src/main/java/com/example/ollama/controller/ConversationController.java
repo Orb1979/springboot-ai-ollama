@@ -21,7 +21,7 @@ public class ConversationController {
         return conversationService.test();
     }
 
-    // curl -X POST 'http://localhost:8080/ai/chat' -H 'Content-Type: application/json'  -d '{"message": "Explain what an invoice is"}'
+    // curl -X POST 'http://localhost:8080/ai/chat' -H 'Content-Type: application/json'  -d '{"question": "Explain what an invoice is"}'
     @PostMapping()
     public ConversationResponse askPost(@RequestBody ConversationRequest conversationRequest) {
         return conversationService.askPromptPost(conversationRequest);

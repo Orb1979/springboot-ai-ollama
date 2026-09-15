@@ -11,12 +11,6 @@ import org.springframework.stereotype.Service;
 @Service
 public class ConversationService {
 	private final ChatClient chatClient;
-	private final static String prompt = """
-                You are an assistant for an accountancy office.
-                Answer questions professionally.
-                If you don't know the answer, say so.
-                Do not invent financial or legal information.
-                """;
 
 	public ConversationService(@Qualifier("conversationClient") ChatClient chatClient) {
 		this.chatClient = chatClient;
@@ -33,8 +27,8 @@ public class ConversationService {
 	public ConversationResponse askPromptPost(ConversationRequest conversationRequest){
 		return chatClient
 				       .prompt()
-				       .system(prompt)
-				       .user(conversationRequest.message())
+				       .system(conversationRequest.system())
+				       .user(conversationRequest.question())
 				       .call()
 				       .entity(ConversationResponse.class);
 	}

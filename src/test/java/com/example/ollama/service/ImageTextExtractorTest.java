@@ -29,7 +29,7 @@ class ImageTextExtractorTest {
 	private ImageTextExtractor imageTextExtractor;
 
 	// Real PNG magic bytes - not a full valid image, just enough that this
-	// test's intent (mime detection + prompt wiring) reads clearly.
+	// test's intent (mime detection + system wiring) reads clearly.
 	private static final byte[] FAKE_PNG_BYTES =
 			{(byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A};
 
