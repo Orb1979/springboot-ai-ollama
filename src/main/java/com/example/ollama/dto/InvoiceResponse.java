@@ -16,6 +16,6 @@ public record InvoiceResponse(
 		BigDecimal amount,
 		String currency,
 		Instant uploadedDate,
-		LocalDate paymentReceivedDate,
+		Instant paymentReceivedDate,
 		Instant updatedDate
 ) {}
