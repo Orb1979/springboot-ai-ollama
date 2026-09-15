@@ -215,9 +215,26 @@ export function InvoiceAnalyzer() {
               <dt>Supplier</dt>
               <dd>{result.supplier}</dd>
             </div>
+            <div className="invoice-grid-wide">
+              <dt>Supplier address</dt>
+              <dd>
+                <span>
+                  {result.supplierStreet} {result.supplierStreetNumber}
+                </span>
+                <span>
+                  {result.supplierPostalCode} {result.supplierCity}
+                </span>
+              </dd>
+            </div>
             <div>
               <dt>Invoice number</dt>
               <dd>{result.invoiceNumber}</dd>
+            </div>
+            <div>
+              <dt>Invoice date</dt>
+              <dd>
+                <time dateTime={result.invoiceDate}>{result.invoiceDate}</time>
+              </dd>
             </div>
             <div>
               <dt>Amount</dt>
@@ -226,6 +243,26 @@ export function InvoiceAnalyzer() {
             <div>
               <dt>Currency</dt>
               <dd>{result.currency}</dd>
+            </div>
+            <div>
+              <dt>Uploaded</dt>
+              <dd>
+                <time dateTime={result.uploadedDate}>
+                  {result.uploadedDate}
+                </time>
+              </dd>
+            </div>
+            <div>
+              <dt>Payment received</dt>
+              <dd>
+                {result.paymentReceivedDate ? (
+                  <time dateTime={result.paymentReceivedDate}>
+                    {result.paymentReceivedDate}
+                  </time>
+                ) : (
+                  'Pending'
+                )}
+              </dd>
             </div>
           </dl>
         </section>

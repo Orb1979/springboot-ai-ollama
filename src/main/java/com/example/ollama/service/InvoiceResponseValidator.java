@@ -26,8 +26,28 @@ public class InvoiceResponseValidator {
 			errors.add("supplier is missing");
 		}
 
+		if (isBlank(response.supplierStreet())) {
+			errors.add("supplier street is missing");
+		}
+
+		if (isBlank(response.supplierStreetNumber())) {
+			errors.add("supplier street number is missing");
+		}
+
+		if (isBlank(response.supplierCity())) {
+			errors.add("supplier city is missing");
+		}
+
+		if (isBlank(response.supplierPostalCode())) {
+			errors.add("supplier postal code is missing");
+		}
+
 		if (isBlank(response.invoiceNumber())) {
 			errors.add("invoice number is missing");
+		}
+
+		if (response.invoiceDate() == null) {
+			errors.add("invoice date is missing");
 		}
 
 		if (response.amount() == null) {
@@ -40,6 +60,10 @@ public class InvoiceResponseValidator {
 			errors.add("currency is missing");
 		} else if (!VALID_CURRENCIES.contains(response.currency().toUpperCase())) {
 			errors.add("unrecognized currency: " + response.currency());
+		}
+
+		if (response.uploadedDate() == null) {
+			errors.add("uploaded date is missing");
 		}
 
 		if (!errors.isEmpty()) {

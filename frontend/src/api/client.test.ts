@@ -33,9 +33,16 @@ describe('API client', () => {
       new Response(
         JSON.stringify({
           supplier: 'Acme',
+          supplierStreet: 'Main Street',
+          supplierStreetNumber: '42A',
+          supplierCity: 'Amsterdam',
+          supplierPostalCode: '1012 AB',
           invoiceNumber: 'INV-42',
+          invoiceDate: '2024-03-12',
           amount: 125.5,
           currency: 'EUR',
+          uploadedDate: '2026-09-15T10:30:00Z',
+          paymentReceivedDate: null,
         }),
         {
           status: 200,
@@ -48,7 +55,14 @@ describe('API client', () => {
 
     await expect(analyzeInvoice(file)).resolves.toMatchObject({
       supplier: 'Acme',
+      supplierStreet: 'Main Street',
+      supplierStreetNumber: '42A',
+      supplierCity: 'Amsterdam',
+      supplierPostalCode: '1012 AB',
       invoiceNumber: 'INV-42',
+      invoiceDate: '2024-03-12',
+      uploadedDate: '2026-09-15T10:30:00Z',
+      paymentReceivedDate: null,
     })
     const [, request] = fetchMock.mock.calls[0]
     expect(fetchMock.mock.calls[0][0]).toBe('/ai/invoices/analyze')
