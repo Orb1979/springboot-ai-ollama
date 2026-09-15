@@ -91,7 +91,7 @@ describe('InvoiceAnalyzer', () => {
         supplier: 'Updated Supplies',
       }),
     )
-    expect(await screen.findByText('2026-09-16T11:00:00Z')).toBeInTheDocument()
+    expect(await screen.findByText('2026-09-16 11:00')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Update' })).toBeDisabled()
   })
 

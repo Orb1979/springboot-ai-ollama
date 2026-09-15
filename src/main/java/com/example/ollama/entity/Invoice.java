@@ -50,7 +50,7 @@ public class Invoice {
 	private Instant uploadedDate;
 
 	@Column(name = "payment_received_date")
-	private LocalDate paymentReceivedDate;
+	private Instant paymentReceivedDate;
 
 	@Column(name = "updated_date")
 	private Instant updatedDate;

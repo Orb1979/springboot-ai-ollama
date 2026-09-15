@@ -1,3 +1,4 @@
+import { formatDateTime } from './dateTimeFormat'
 import type { InvoiceDraft } from './invoiceDraft'
 
 type InvoiceEditableFieldsProps = {
@@ -97,10 +98,10 @@ export function InvoiceEditableFields({
         />
       </label>
       <label className="field" htmlFor={`${idPrefix}-payment-date`}>
-        <span>Payment received date</span>
+        <span>Payment received</span>
         <input
           id={`${idPrefix}-payment-date`}
-          type="date"
+          type="datetime-local"
           value={draft.paymentReceivedDate}
           onChange={(event) =>
             onChange('paymentReceivedDate', event.target.value)
@@ -110,14 +111,14 @@ export function InvoiceEditableFields({
       <div className="field readonly-field">
         <span>Uploaded</span>
         <p>
-          <time dateTime={uploadedDate}>{uploadedDate}</time>
+          <time dateTime={uploadedDate}>{formatDateTime(uploadedDate)}</time>
         </p>
       </div>
       <div className="field readonly-field">
         <span>Updated</span>
         <p>
           {updatedDate ? (
-            <time dateTime={updatedDate}>{updatedDate}</time>
+            <time dateTime={updatedDate}>{formatDateTime(updatedDate)}</time>
           ) : (
             'Not updated'
           )}

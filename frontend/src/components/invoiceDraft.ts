@@ -1,4 +1,8 @@
 import type { InvoiceResponse } from '../api/types'
+import {
+  fromDatetimeLocalValue,
+  toDatetimeLocalValue,
+} from './dateTimeFormat'
 
 export type InvoiceDraft = {
   supplier: string
@@ -24,7 +28,7 @@ export function toDraft(invoice: InvoiceResponse): InvoiceDraft {
     invoiceDate: invoice.invoiceDate,
     amount: String(invoice.amount),
     currency: invoice.currency,
-    paymentReceivedDate: invoice.paymentReceivedDate ?? '',
+    paymentReceivedDate: toDatetimeLocalValue(invoice.paymentReceivedDate),
   }
 }
 
@@ -53,8 +57,6 @@ export function toUpdatePayload(
     invoiceDate: draft.invoiceDate,
     amount: Number(draft.amount),
     currency: draft.currency,
-    paymentReceivedDate: draft.paymentReceivedDate.trim()
-      ? draft.paymentReceivedDate
-      : null,
+    paymentReceivedDate: fromDatetimeLocalValue(draft.paymentReceivedDate),
   }
 }
