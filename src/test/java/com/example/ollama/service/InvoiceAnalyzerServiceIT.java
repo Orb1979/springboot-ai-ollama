@@ -74,8 +74,10 @@ class InvoiceAnalyzerServiceIT {
 		assertThat(response.invoiceDate()).isEqualTo(expectedInvoiceDate);
 		assertThat(response.amount()).isEqualByComparingTo(new BigDecimal(expectedAmount));
 		assertThat(response.currency()).isEqualToIgnoringCase(expectedCurrency);
+		assertThat(response.id()).isNotNull();
 		assertThat(response.uploadedDate()).isNotNull();
 		assertThat(response.paymentReceivedDate()).isNull();
+		assertThat(response.updatedDate()).isNull();
 	}
 
 	@Test

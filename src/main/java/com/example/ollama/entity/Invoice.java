@@ -52,4 +52,7 @@ public class Invoice {
 	@Column(name = "payment_received_date")
 	private LocalDate paymentReceivedDate;
 
+	@Column(name = "updated_date")
+	private Instant updatedDate;
+
 }

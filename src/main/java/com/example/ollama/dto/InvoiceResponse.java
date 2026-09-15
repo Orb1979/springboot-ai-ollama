@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 
 public record InvoiceResponse(
+		Long id,
 		String supplier,
 		String supplierStreet,
 		String supplierStreetNumber,
@@ -15,5 +16,6 @@ public record InvoiceResponse(
 		BigDecimal amount,
 		String currency,
 		Instant uploadedDate,
-		LocalDate paymentReceivedDate
+		LocalDate paymentReceivedDate,
+		Instant updatedDate
 ) {}

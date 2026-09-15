@@ -53,3 +53,21 @@ export async function analyzeInvoice(file: File): Promise<InvoiceResponse> {
 
   return responseJson<InvoiceResponse>(response)
 }
+
+export async function listInvoices(): Promise<InvoiceResponse[]> {
+  const response = await fetch('/ai/invoices')
+  return responseJson<InvoiceResponse[]>(response)
+}
+
+export async function updateInvoice(
+  id: number,
+  invoice: InvoiceResponse,
+): Promise<InvoiceResponse> {
+  const response = await fetch(`/ai/invoices/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(invoice),
+  })
+
+  return responseJson<InvoiceResponse>(response)
+}

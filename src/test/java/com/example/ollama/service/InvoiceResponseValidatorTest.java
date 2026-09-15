@@ -96,8 +96,8 @@ class InvoiceResponseValidatorTest {
 	@Test
 	void missingRequiredInvoiceDetails_collectsExpectedErrors() {
 		InvoiceResponse response = new InvoiceResponse(
-				"Acme Corp", null, "   ", null, null,
-				"INV-001", null, new BigDecimal("100.00"), "EUR", null, null);
+				1L, "Acme Corp", null, "   ", null, null,
+				"INV-001", null, new BigDecimal("100.00"), "EUR", null, null, null);
 
 		assertThatThrownBy(() -> validator.validate(response))
 				.isInstanceOf(InvoiceValidationException.class)
@@ -115,7 +115,7 @@ class InvoiceResponseValidatorTest {
 	@Test
 	void allFieldsMissing_collectsAllRequiredErrors() {
 		InvoiceResponse response = new InvoiceResponse(
-				null, null, null, null, null, null, null, null, null, null, null);
+				null, null, null, null, null, null, null, null, null, null, null, null, null);
 
 		assertThatThrownBy(() -> validator.validate(response))
 				.isInstanceOf(InvoiceValidationException.class)
@@ -144,6 +144,7 @@ class InvoiceResponseValidatorTest {
 			BigDecimal amount,
 			String currency) {
 		return new InvoiceResponse(
+				1L,
 				supplier,
 				"Main Street",
 				"42A",
@@ -154,6 +155,7 @@ class InvoiceResponseValidatorTest {
 				amount,
 				currency,
 				Instant.parse("2026-09-15T10:00:00Z"),
+				null,
 				null
 		);
 	}
