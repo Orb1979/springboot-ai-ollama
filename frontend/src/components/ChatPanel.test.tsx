@@ -21,7 +21,7 @@ describe('ChatPanel', () => {
     render(<ChatPanel />)
 
     await user.type(
-      screen.getByLabelText('System prompt'),
+      screen.getByLabelText(/System prompt/),
       'You help with invoices.',
     )
     await user.type(screen.getByLabelText('Question'), 'Who are you?')
@@ -37,6 +37,25 @@ describe('ChatPanel', () => {
     expect(
       await screen.findByText('I am an invoice assistant.'),
     ).toBeInTheDocument()
+  })
+
+  it('submits an empty string when the optional system prompt is blank', async () => {
+    sendChatMock.mockResolvedValue({ message: 'Hello!' })
+    const user = userEvent.setup()
+    render(<ChatPanel />)
+
+    expect(
+      screen.getByLabelText('System prompt (optional)'),
+    ).toHaveAccessibleDescription(
+      'Optional. Leave blank to use the model’s default behavior.',
+    )
+    await user.type(screen.getByLabelText('Question'), 'Hello')
+    await user.click(screen.getByRole('button', { name: 'Send question' }))
+
+    expect(sendChatMock).toHaveBeenCalledWith({
+      system: '',
+      question: 'Hello',
+    })
   })
 
   it('inserts a newline instead of submitting when Shift+Enter is pressed', async () => {
