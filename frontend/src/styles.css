@@ -328,6 +328,7 @@ textarea:focus {
 
 .invoice-table {
   width: 100%;
+  max-width: 100%;
   table-layout: fixed;
   border-collapse: collapse;
   font-size: 0.72rem;
@@ -340,6 +341,7 @@ textarea:focus {
   text-align: left;
   vertical-align: top;
   overflow: hidden;
+  text-overflow: ellipsis;
   word-break: break-word;
   overflow-wrap: anywhere;
 }
@@ -382,6 +384,7 @@ textarea:focus {
 .invoice-table .secondary-button {
   padding: 6px 10px;
   font-size: 0.72rem;
+  max-width: 100%;
 }
 
 .empty-state {
