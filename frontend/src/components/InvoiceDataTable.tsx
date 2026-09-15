@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import {
   columnFilteringFeature,
+  columnSizingFeature,
   createColumnHelper,
   createFilteredRowModel,
   createSortedRowModel,
@@ -16,6 +17,7 @@ import type { InvoiceResponse } from '../api/types'
 import { formatAmountValue, formatDateTime } from './dateTimeFormat'
 
 const features = tableFeatures({
+  columnSizingFeature,
   columnFilteringFeature,
   globalFilteringFeature,
   rowSortingFeature,
@@ -32,6 +34,12 @@ type InvoiceDataTableProps = {
   onEdit: (invoice: InvoiceResponse) => void
 }
 
+function columnWidthStyle(size: number, totalSize: number) {
+  return {
+    width: `${(size / totalSize) * 100}%`,
+  }
+}
+
 export function InvoiceDataTable({ invoices, onEdit }: InvoiceDataTableProps) {
   const [globalFilter, setGlobalFilter] = useState('')
 
@@ -41,30 +49,38 @@ export function InvoiceDataTable({ invoices, onEdit }: InvoiceDataTableProps) {
         columnHelper.accessor('id', {
           header: 'ID',
           cell: (info) => info.getValue(),
+          size: 48,
+          maxSize: 64,
         }),
         columnHelper.accessor('supplier', {
           header: 'Supplier',
           cell: (info) => info.getValue(),
+          size: 140,
         }),
         columnHelper.accessor('supplierPostalCode', {
           header: 'Postal code',
           cell: (info) => info.getValue(),
+          size: 90,
         }),
         columnHelper.accessor('invoiceNumber', {
           header: 'Invoice number',
           cell: (info) => info.getValue(),
+          size: 110,
         }),
         columnHelper.accessor('invoiceDate', {
           header: 'Invoice date',
           cell: (info) => info.getValue(),
+          size: 100,
         }),
         columnHelper.accessor('amount', {
           header: 'Amount',
           cell: (info) => formatAmountValue(info.getValue()),
+          size: 80,
         }),
         columnHelper.accessor('currency', {
           header: 'Currency',
           cell: (info) => info.getValue(),
+          size: 70,
         }),
         columnHelper.accessor(
           (row) => formatDateTime(row.uploadedDate),
@@ -72,6 +88,7 @@ export function InvoiceDataTable({ invoices, onEdit }: InvoiceDataTableProps) {
             id: 'uploadedDate',
             header: 'Uploaded',
             cell: (info) => info.getValue(),
+            size: 110,
           },
         ),
         columnHelper.accessor(
@@ -83,6 +100,7 @@ export function InvoiceDataTable({ invoices, onEdit }: InvoiceDataTableProps) {
             id: 'paymentReceivedDate',
             header: 'Payment received',
             cell: (info) => info.getValue(),
+            size: 120,
           },
         ),
         columnHelper.accessor(
@@ -92,6 +110,7 @@ export function InvoiceDataTable({ invoices, onEdit }: InvoiceDataTableProps) {
             id: 'updatedDate',
             header: 'Updated',
             cell: (info) => info.getValue(),
+            size: 110,
           },
         ),
         columnHelper.display({
@@ -99,6 +118,7 @@ export function InvoiceDataTable({ invoices, onEdit }: InvoiceDataTableProps) {
           header: 'Actions',
           enableSorting: false,
           enableGlobalFilter: false,
+          size: 72,
           cell: ({ row }) => (
             <button
               className="secondary-button"
@@ -126,6 +146,7 @@ export function InvoiceDataTable({ invoices, onEdit }: InvoiceDataTableProps) {
   })
 
   const rows = table.getRowModel().rows
+  const totalSize = table.getTotalSize()
 
   return (
     <div className="invoice-table-panel">
@@ -148,6 +169,14 @@ export function InvoiceDataTable({ invoices, onEdit }: InvoiceDataTableProps) {
       </div>
       <div className="invoice-table-wrap">
         <table className="invoice-table">
+          <colgroup>
+            {table.getAllLeafColumns().map((column) => (
+              <col
+                key={column.id}
+                style={columnWidthStyle(column.getSize(), totalSize)}
+              />
+            ))}
+          </colgroup>
           <thead>
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
@@ -158,6 +187,7 @@ export function InvoiceDataTable({ invoices, onEdit }: InvoiceDataTableProps) {
                     <th
                       key={header.id}
                       className={canSort ? 'sortable' : undefined}
+                      style={columnWidthStyle(header.getSize(), totalSize)}
                       aria-sort={
                         sorted === 'asc'
                           ? 'ascending'
@@ -202,7 +232,10 @@ export function InvoiceDataTable({ invoices, onEdit }: InvoiceDataTableProps) {
             {rows.map((row) => (
               <tr key={row.id}>
                 {row.getAllCells().map((cell) => (
-                  <td key={cell.id}>
+                  <td
+                    key={cell.id}
+                    style={columnWidthStyle(cell.column.getSize(), totalSize)}
+                  >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>
                 ))}
