@@ -11,6 +11,7 @@ import org.springframework.ai.chat.client.ChatClient;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -47,10 +48,26 @@ class ConversationServiceTest {
 		when(requestSpec.call()).thenReturn(callResponseSpec);
 		when(callResponseSpec.entity(ConversationResponse.class)).thenReturn(new ConversationResponse("AI response"));
 
-		ConversationResponse response = conversationService.askPromptPost(new ConversationRequest("who are you?"));
+		ConversationResponse response = conversationService.askPromptPost(
+				new ConversationRequest("You are a helpful assistant.", "who are you?"));
 
 		assertEquals("AI response", response.message());
-		verify(requestSpec).user(anyString());
-		verify(requestSpec).system(anyString());
+		verify(requestSpec).user("who are you?");
+		verify(requestSpec).system("You are a helpful assistant.");
+	}
+
+	@Test
+	public void askWithoutSystemPrompt(){
+		when(chatClient.prompt()).thenReturn(requestSpec);
+		when(requestSpec.user(anyString())).thenReturn(requestSpec);
+		when(requestSpec.call()).thenReturn(callResponseSpec);
+		when(callResponseSpec.entity(ConversationResponse.class)).thenReturn(new ConversationResponse("AI response"));
+
+		ConversationResponse response = conversationService.askPromptPost(
+				new ConversationRequest("", "who are you?"));
+
+		assertEquals("AI response", response.message());
+		verify(requestSpec).user("who are you?");
+		verify(requestSpec, never()).system(anyString());
 	}
 }
