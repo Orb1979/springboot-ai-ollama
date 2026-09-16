@@ -18,6 +18,7 @@ ollama pull nomic-embed-text
 # app.ai.embedding.provider=ollama
 # app.ai.embedding.model=nomic-embed-text
 # spring.ai.vectorstore.pgvector.dimensions=768
+# app.ai.search.similarity-threshold=0.5
 
 # check if ollama is running, if this gives some result is running correctly
 ollama ps
@@ -42,6 +43,10 @@ curl "http://localhost:8080/ai/invoices/search?q=electrician%20around%20500&curr
 Switching embedding providers (Ollama ↔ OpenAI) requires matching
 `app.ai.embedding.*` and `spring.ai.vectorstore.pgvector.dimensions`, then
 recreating/clearing the `vector_store` table so embeddings are rebuilt.
+
+Semantic search drops hits below `app.ai.search.similarity-threshold` (cosine
+similarity 0–1, default `0.5`) and ranks remaining results by vector score plus
+a light lexical boost so name matches like "Acme Corp" outrank weak neighbors.
 
 ## Frontend
 

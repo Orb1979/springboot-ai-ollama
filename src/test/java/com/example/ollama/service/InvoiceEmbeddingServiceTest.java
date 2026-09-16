@@ -18,7 +18,6 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -37,7 +36,10 @@ class InvoiceEmbeddingServiceTest {
 
 	@BeforeEach
 	void setUp() {
-		service = new InvoiceEmbeddingService(vectorStore, invoiceRepository);
+		service = new InvoiceEmbeddingService(
+				vectorStore,
+				invoiceRepository,
+				InvoiceEmbeddingService.DEFAULT_SIMILARITY_THRESHOLD);
 	}
 
 	@Test
@@ -94,32 +96,80 @@ class InvoiceEmbeddingServiceTest {
 	}
 
 	@Test
-	void search_withQuery_preservesSimilarityRankAndAppliesFilters() {
-		Document first = new Document(
-				InvoiceEmbeddingService.documentIdFor(2L),
-				"second",
-				Map.of(InvoiceEmbeddingService.METADATA_INVOICE_ID, "2"));
-		Document second = new Document(
-				InvoiceEmbeddingService.documentIdFor(1L),
-				"first",
-				Map.of(InvoiceEmbeddingService.METADATA_INVOICE_ID, "1"));
-		when(vectorStore.similaritySearch(any(SearchRequest.class))).thenReturn(List.of(first, second));
+	void search_withQuery_ordersByScoreDescendingAndAppliesFilters() {
+		Document lowerScoreFirstInList = Document.builder()
+				.id(InvoiceEmbeddingService.documentIdFor(2L))
+				.text("Supplier: Bright Office Supplies Ltd")
+				.metadata(InvoiceEmbeddingService.METADATA_INVOICE_ID, "2")
+				.score(0.42)
+				.build();
+		Document higherScoreSecondInList = Document.builder()
+				.id(InvoiceEmbeddingService.documentIdFor(1L))
+				.text("Supplier: Acme Corp")
+				.metadata(InvoiceEmbeddingService.METADATA_INVOICE_ID, "1")
+				.score(0.81)
+				.build();
+		when(vectorStore.similaritySearch(any(SearchRequest.class)))
+				.thenReturn(List.of(lowerScoreFirstInList, higherScoreSecondInList));
 		when(invoiceRepository.findAllById(any())).thenReturn(List.of(sample(1L), sample(2L)));
 
 		List<Invoice> results = service.search(new InvoiceSearchCriteria(
-				"electrician around 100 euro", null, null, null, null, null, 20));
+				"show me all suppliers with name acme corp", null, null, null, null, null, 20));
 
-		assertThat(results).extracting(Invoice::getId).containsExactly(2L, 1L);
+		assertThat(results).extracting(Invoice::getId).containsExactly(1L, 2L);
+	}
+
+	@Test
+	void search_withQuery_passesConfiguredSimilarityThreshold() {
+		when(vectorStore.similaritySearch(any(SearchRequest.class))).thenReturn(List.of());
+
+		service.search(new InvoiceSearchCriteria("acme corp", null, null, null, null, null, 20));
+
+		ArgumentCaptor<SearchRequest> request = ArgumentCaptor.captor();
+		verify(vectorStore).similaritySearch(request.capture());
+		assertThat(request.getValue().getSimilarityThreshold())
+				.isEqualTo(InvoiceEmbeddingService.DEFAULT_SIMILARITY_THRESHOLD);
+		assertThat(request.getValue().getQuery()).isEqualTo("acme corp");
+	}
+
+	@Test
+	void search_withQuery_prefersStrongLexicalSupplierMatchOverWeakerNeighbor() {
+		Document weakNeighbor = Document.builder()
+				.id(InvoiceEmbeddingService.documentIdFor(2L))
+				.text("Supplier: Bright Office Supplies Ltd\nAddress: High Street 1, London")
+				.metadata(InvoiceEmbeddingService.METADATA_INVOICE_ID, "2")
+				.score(0.58)
+				.build();
+		Document nameMatch = Document.builder()
+				.id(InvoiceEmbeddingService.documentIdFor(1L))
+				.text("Supplier: Acme Corp\nAddress: Main Street 42A, Amsterdam")
+				.metadata(InvoiceEmbeddingService.METADATA_INVOICE_ID, "1")
+				.score(0.51)
+				.build();
+		when(vectorStore.similaritySearch(any(SearchRequest.class)))
+				.thenReturn(List.of(weakNeighbor, nameMatch));
+		when(invoiceRepository.findAllById(any())).thenReturn(List.of(
+				sample(1L),
+				sample(2L, "Bright Office Supplies Ltd", new BigDecimal("99.90"), "EUR", LocalDate.of(2024, 3, 12))));
+
+		List<Invoice> results = service.search(new InvoiceSearchCriteria(
+				"show me all suppliers with name acme corp", null, null, null, null, null, 20));
+
+		assertThat(results).extracting(Invoice::getId).containsExactly(1L, 2L);
 	}
 
 	private Invoice sample(Long id) {
-		return sample(id, new BigDecimal("99.90"), "EUR", LocalDate.of(2024, 3, 12));
+		return sample(id, "Acme Corp", new BigDecimal("99.90"), "EUR", LocalDate.of(2024, 3, 12));
 	}
 
 	private Invoice sample(Long id, BigDecimal amount, String currency, LocalDate invoiceDate) {
+		return sample(id, "Acme Corp", amount, currency, invoiceDate);
+	}
+
+	private Invoice sample(Long id, String supplier, BigDecimal amount, String currency, LocalDate invoiceDate) {
 		return new Invoice(
 				id,
-				"Acme Corp",
+				supplier,
 				"Main Street",
 				"42A",
 				"Amsterdam",
