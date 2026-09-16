@@ -2,6 +2,7 @@ INVOICE
 
 Bright Office Supplies Ltd
 77 Commerce Park
+ANN 9AA
 Manchester, UK
 
 Invoice Number: BOS-5521
@@ -21,7 +22,7 @@ Desk lamps                       4         5.00           20.00
 --------------------------------------------------------------
 Subtotal:                                                 100.00
 VAT (21%):                                                 21.00
-Amount already paid:                                         0.00
+Amount already paid:                                        0.00
 --------------------------------------------------------------
 Total Amount Due: EUR 121.00
 
