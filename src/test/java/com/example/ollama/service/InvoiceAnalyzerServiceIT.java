@@ -1,6 +1,6 @@
 package com.example.ollama.service;
 
-import com.example.ollama.dto.InvoiceResponse;
+import com.example.ollama.entity.Invoice;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -63,21 +63,21 @@ class InvoiceAnalyzerServiceIT {
 		byte[] bytes = Files.readAllBytes(Path.of("src/test/resources/invoices/" + fileName));
 		MockMultipartFile file = new MockMultipartFile("file", fileName, "text/plain", bytes);
 
-		InvoiceResponse response = invoiceAnalyzerService.analyzeInvoice(file);
+		Invoice invoice = invoiceAnalyzerService.analyzeInvoice(file);
 
-		assertThat(response.supplier()).containsIgnoringCase(expectedSupplierContains);
-		assertThat(response.supplierStreet()).isEqualToIgnoringCase(expectedStreetContains);
-		assertThat(response.supplierStreetNumber()).isEqualToIgnoringCase(expectedStreetNumber);
-		assertThat(response.supplierCity()).isEqualToIgnoringCase(expectedCity);
-		assertThat(response.supplierPostalCode()).isEqualToIgnoringCase(expectedPostalCode);
-		assertThat(response.invoiceNumber()).isEqualToIgnoringCase(expectedInvoiceNumber);
-		assertThat(response.invoiceDate()).isEqualTo(expectedInvoiceDate);
-		assertThat(response.amount()).isEqualByComparingTo(new BigDecimal(expectedAmount));
-		assertThat(response.currency()).isEqualToIgnoringCase(expectedCurrency);
-		assertThat(response.id()).isNotNull();
-		assertThat(response.uploadedDate()).isNotNull();
-		assertThat(response.paymentReceivedDate()).isNull();
-		assertThat(response.updatedDate()).isNull();
+		assertThat(invoice.getSupplier()).containsIgnoringCase(expectedSupplierContains);
+		assertThat(invoice.getSupplierStreet()).isEqualToIgnoringCase(expectedStreetContains);
+		assertThat(invoice.getSupplierStreetNumber()).isEqualToIgnoringCase(expectedStreetNumber);
+		assertThat(invoice.getSupplierCity()).isEqualToIgnoringCase(expectedCity);
+		assertThat(invoice.getSupplierPostalCode()).isEqualToIgnoringCase(expectedPostalCode);
+		assertThat(invoice.getInvoiceNumber()).isEqualToIgnoringCase(expectedInvoiceNumber);
+		assertThat(invoice.getInvoiceDate()).isEqualTo(expectedInvoiceDate);
+		assertThat(invoice.getAmount()).isEqualByComparingTo(new BigDecimal(expectedAmount));
+		assertThat(invoice.getCurrency()).isEqualToIgnoringCase(expectedCurrency);
+		assertThat(invoice.getId()).isNotNull();
+		assertThat(invoice.getUploadedDate()).isNotNull();
+		assertThat(invoice.getPaymentReceivedDate()).isNull();
+		assertThat(invoice.getUpdatedDate()).isNull();
 	}
 
 	@Test
@@ -85,10 +85,10 @@ class InvoiceAnalyzerServiceIT {
 		byte[] bytes = Files.readAllBytes(Path.of("src/test/resources/invoices/dutch-invoice.png"));
 		MockMultipartFile file = new MockMultipartFile("file", "dutch-invoice.png", "image/png", bytes);
 
-		InvoiceResponse response = invoiceAnalyzerService.analyzeInvoice(file);
+		Invoice invoice = invoiceAnalyzerService.analyzeInvoice(file);
 
 		// note: getting value from image in rare occasions gives the wrong value (at least with my local model)
-		assertThat(response.amount()).isEqualByComparingTo(new BigDecimal("249.00"));
+		assertThat(invoice.getAmount()).isEqualByComparingTo(new BigDecimal("249.00"));
 	}
 
 	@Test
@@ -96,8 +96,8 @@ class InvoiceAnalyzerServiceIT {
 		byte[] bytes = Files.readAllBytes(Path.of("src/test/resources/invoices/invoice-with-subtotal.txt"));
 		MockMultipartFile file = new MockMultipartFile("file", "invoice-with-subtotal.txt", "text/plain", bytes);
 
-		InvoiceResponse response = invoiceAnalyzerService.analyzeInvoice(file);
+		Invoice invoice = invoiceAnalyzerService.analyzeInvoice(file);
 
-		assertThat(response.amount()).isEqualByComparingTo(new BigDecimal("121.00"));
+		assertThat(invoice.getAmount()).isEqualByComparingTo(new BigDecimal("121.00"));
 	}
 }

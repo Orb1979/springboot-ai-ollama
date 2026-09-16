@@ -1,6 +1,6 @@
 package com.example.ollama.service;
 
-import com.example.ollama.dto.InvoiceResponse;
+import com.example.ollama.entity.Invoice;
 import com.example.ollama.exception.InvoiceValidationException;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
@@ -12,57 +12,57 @@ import java.util.Set;
 
 @Log4j2
 @Component
-public class InvoiceResponseValidator {
+public class InvoiceValidator {
 
 	private static final Set<String> VALID_CURRENCIES = Set.of(
 			"EUR", "USD"
 			// if you want to except any currency format, swap for java.util.Currency lookup
 	);
 
-	public void validate(InvoiceResponse response) {
+	public void validate(Invoice invoice) {
 		List<String> errors = new ArrayList<>();
 
-		if (isBlank(response.supplier())) {
+		if (isBlank(invoice.getSupplier())) {
 			errors.add("supplier is missing");
 		}
 
-		if (isBlank(response.supplierStreet())) {
+		if (isBlank(invoice.getSupplierStreet())) {
 			errors.add("supplier street is missing");
 		}
 
-		if (isBlank(response.supplierStreetNumber())) {
+		if (isBlank(invoice.getSupplierStreetNumber())) {
 			errors.add("supplier street number is missing");
 		}
 
-		if (isBlank(response.supplierCity())) {
+		if (isBlank(invoice.getSupplierCity())) {
 			errors.add("supplier city is missing");
 		}
 
-		if (isBlank(response.supplierPostalCode())) {
+		if (isBlank(invoice.getSupplierPostalCode())) {
 			errors.add("supplier postal code is missing");
 		}
 
-		if (isBlank(response.invoiceNumber())) {
+		if (isBlank(invoice.getInvoiceNumber())) {
 			errors.add("invoice number is missing");
 		}
 
-		if (response.invoiceDate() == null) {
+		if (invoice.getInvoiceDate() == null) {
 			errors.add("invoice date is missing");
 		}
 
-		if (response.amount() == null) {
+		if (invoice.getAmount() == null) {
 			errors.add("amount is missing");
-		} else if (response.amount().compareTo(BigDecimal.ZERO) <= 0) {
-			errors.add("amount must be greater than zero, got: " + response.amount());
+		} else if (invoice.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+			errors.add("amount must be greater than zero, got: " + invoice.getAmount());
 		}
 
-		if (isBlank(response.currency())) {
+		if (isBlank(invoice.getCurrency())) {
 			errors.add("currency is missing");
-		} else if (!VALID_CURRENCIES.contains(response.currency().toUpperCase())) {
-			errors.add("unrecognized currency: " + response.currency());
+		} else if (!VALID_CURRENCIES.contains(invoice.getCurrency().toUpperCase())) {
+			errors.add("unrecognized currency: " + invoice.getCurrency());
 		}
 
-		if (response.uploadedDate() == null) {
+		if (invoice.getUploadedDate() == null) {
 			errors.add("uploaded date is missing");
 		}
 

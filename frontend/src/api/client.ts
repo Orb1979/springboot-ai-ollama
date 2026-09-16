@@ -2,6 +2,7 @@ import type {
   ConversationRequest,
   ConversationResponse,
   InvoiceResponse,
+  InvoiceUpdateRequest,
 } from './types'
 
 async function errorMessage(response: Response): Promise<string> {
@@ -61,7 +62,7 @@ export async function listInvoices(): Promise<InvoiceResponse[]> {
 
 export async function updateInvoice(
   id: number,
-  invoice: InvoiceResponse,
+  invoice: InvoiceUpdateRequest,
 ): Promise<InvoiceResponse> {
   const response = await fetch(`/ai/invoices/${id}`, {
     method: 'PUT',

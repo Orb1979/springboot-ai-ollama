@@ -1,6 +1,6 @@
 package com.example.ollama.service;
 
-import com.example.ollama.dto.InvoiceResponse;
+import com.example.ollama.entity.Invoice;
 import com.example.ollama.exception.InvoiceValidationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -16,24 +16,23 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * Pure unit tests - no Spring context, no mocks needed since the validator has zero dependencies.
  */
-class InvoiceResponseValidatorTest {
+class InvoiceValidatorTest {
 
-	private final InvoiceResponseValidator validator = new InvoiceResponseValidator();
+	private final InvoiceValidator validator = new InvoiceValidator();
 
 	@Test
-	void validResponse_doesNotThrow() {
-		InvoiceResponse response = validResponse();
+	void validInvoice_doesNotThrow() {
+		Invoice invoice = validInvoice();
 
-		validator.validate(response);
-
+		validator.validate(invoice);
 	}
 
 	@Test
 	void missingSupplier_throwsWithExpectedError() {
-		InvoiceResponse response = response(
+		Invoice invoice = invoice(
 				null, "INV-001", new BigDecimal("100.00"), "EUR");
 
-		assertThatThrownBy(() -> validator.validate(response))
+		assertThatThrownBy(() -> validator.validate(invoice))
 				.isInstanceOf(InvoiceValidationException.class)
 				.satisfies(ex -> assertThat(((InvoiceValidationException) ex).getErrors())
 						                 .contains("supplier is missing"));
@@ -41,10 +40,10 @@ class InvoiceResponseValidatorTest {
 
 	@Test
 	void blankInvoiceNumber_throwsWithExpectedError() {
-		InvoiceResponse response = response(
+		Invoice invoice = invoice(
 				"Acme Corp", "   ", new BigDecimal("100.00"), "EUR");
 
-		assertThatThrownBy(() -> validator.validate(response))
+		assertThatThrownBy(() -> validator.validate(invoice))
 				.isInstanceOf(InvoiceValidationException.class)
 				.satisfies(ex -> assertThat(((InvoiceValidationException) ex).getErrors())
 						                 .contains("invoice number is missing"));
@@ -52,10 +51,10 @@ class InvoiceResponseValidatorTest {
 
 	@Test
 	void nullAmount_throwsWithExpectedError() {
-		InvoiceResponse response = response(
+		Invoice invoice = invoice(
 				"Acme Corp", "INV-001", null, "EUR");
 
-		assertThatThrownBy(() -> validator.validate(response))
+		assertThatThrownBy(() -> validator.validate(invoice))
 				.isInstanceOf(InvoiceValidationException.class)
 				.satisfies(ex -> assertThat(((InvoiceValidationException) ex).getErrors())
 						                 .contains("amount is missing"));
@@ -64,10 +63,10 @@ class InvoiceResponseValidatorTest {
 	@ParameterizedTest
 	@CsvSource({"0", "-50.00"})
 	void nonPositiveAmount_throwsWithExpectedError(String amount) {
-		InvoiceResponse response = response(
+		Invoice invoice = invoice(
 				"Acme Corp", "INV-001", new BigDecimal(amount), "EUR");
 
-		assertThatThrownBy(() -> validator.validate(response))
+		assertThatThrownBy(() -> validator.validate(invoice))
 				.isInstanceOf(InvoiceValidationException.class)
 				.satisfies(ex -> assertThat(((InvoiceValidationException) ex).getErrors())
 						                 .anyMatch(msg -> msg.startsWith("amount must be greater than zero")));
@@ -75,10 +74,10 @@ class InvoiceResponseValidatorTest {
 
 	@Test
 	void unrecognizedCurrency_throwsWithExpectedError() {
-		InvoiceResponse response = response(
+		Invoice invoice = invoice(
 				"Acme Corp", "INV-001", new BigDecimal("100.00"), "GBP");
 
-		assertThatThrownBy(() -> validator.validate(response))
+		assertThatThrownBy(() -> validator.validate(invoice))
 				.isInstanceOf(InvoiceValidationException.class)
 				.satisfies(ex -> assertThat(((InvoiceValidationException) ex).getErrors())
 						                 .contains("unrecognized currency: GBP"));
@@ -86,20 +85,19 @@ class InvoiceResponseValidatorTest {
 
 	@Test
 	void currencyCheck_isCaseInsensitive() {
-		InvoiceResponse response = response(
+		Invoice invoice = invoice(
 				"Acme Corp", "INV-001", new BigDecimal("100.00"), "eur");
 
-		validator.validate(response);
-		// no exception = pass, proves toUpperCase() normalization works
+		validator.validate(invoice);
 	}
 
 	@Test
 	void missingRequiredInvoiceDetails_collectsExpectedErrors() {
-		InvoiceResponse response = new InvoiceResponse(
+		Invoice invoice = new Invoice(
 				1L, "Acme Corp", null, "   ", null, null,
 				"INV-001", null, new BigDecimal("100.00"), "EUR", null, null, null);
 
-		assertThatThrownBy(() -> validator.validate(response))
+		assertThatThrownBy(() -> validator.validate(invoice))
 				.isInstanceOf(InvoiceValidationException.class)
 				.satisfies(ex -> assertThat(((InvoiceValidationException) ex).getErrors())
 						                 .hasSize(6)
@@ -114,10 +112,10 @@ class InvoiceResponseValidatorTest {
 
 	@Test
 	void allFieldsMissing_collectsAllRequiredErrors() {
-		InvoiceResponse response = new InvoiceResponse(
+		Invoice invoice = new Invoice(
 				null, null, null, null, null, null, null, null, null, null, null, null, null);
 
-		assertThatThrownBy(() -> validator.validate(response))
+		assertThatThrownBy(() -> validator.validate(invoice))
 				.isInstanceOf(InvoiceValidationException.class)
 				.satisfies(ex -> assertThat(((InvoiceValidationException) ex).getErrors())
 						                 .hasSize(10)
@@ -134,16 +132,16 @@ class InvoiceResponseValidatorTest {
 								                 "uploaded date is missing"));
 	}
 
-	private InvoiceResponse validResponse() {
-		return response("Acme Corp", "INV-001", new BigDecimal("100.00"), "EUR");
+	private Invoice validInvoice() {
+		return invoice("Acme Corp", "INV-001", new BigDecimal("100.00"), "EUR");
 	}
 
-	private InvoiceResponse response(
+	private Invoice invoice(
 			String supplier,
 			String invoiceNumber,
 			BigDecimal amount,
 			String currency) {
-		return new InvoiceResponse(
+		return new Invoice(
 				1L,
 				supplier,
 				"Main Street",

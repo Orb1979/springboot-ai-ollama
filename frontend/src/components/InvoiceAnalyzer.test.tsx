@@ -87,7 +87,6 @@ describe('InvoiceAnalyzer', () => {
     expect(updateInvoiceMock).toHaveBeenCalledWith(
       42,
       expect.objectContaining({
-        id: 42,
         supplier: 'Updated Supplies',
       }),
     )

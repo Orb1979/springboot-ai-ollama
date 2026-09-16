@@ -1,4 +1,4 @@
-import type { InvoiceResponse } from '../api/types'
+import type { InvoiceResponse, InvoiceUpdateRequest } from '../api/types'
 import {
   fromDatetimeLocalValue,
   toDatetimeLocalValue,
@@ -43,11 +43,10 @@ export function isDraftDirty(
 }
 
 export function toUpdatePayload(
-  invoice: InvoiceResponse,
+  _invoice: InvoiceResponse,
   draft: InvoiceDraft,
-): InvoiceResponse {
+): InvoiceUpdateRequest {
   return {
-    ...invoice,
     supplier: draft.supplier,
     supplierStreet: draft.supplierStreet,
     supplierStreetNumber: draft.supplierStreetNumber,
