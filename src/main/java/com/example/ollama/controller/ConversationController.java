@@ -15,13 +15,11 @@ import org.springframework.web.bind.annotation.*;
 public class ConversationController {
     private final ConversationService conversationService;
 
-    // curl http://localhost:8080/ai/chat/test
     @GetMapping("/test")
     public String ask() {
         return conversationService.test();
     }
 
-    // curl -X POST 'http://localhost:8080/ai/chat' -H 'Content-Type: application/json'  -d '{"question": "Explain what an invoice is"}'
     @PostMapping()
     public ConversationResponse askPost(@RequestBody ConversationRequest conversationRequest) {
         return conversationService.askPromptPost(conversationRequest);

@@ -19,8 +19,6 @@ import java.util.Locale;
 @Configuration
 public class ChatClientConfig {
 
-
-
 	/*
 		create OpenAIClient bean if a spring.ai.openai API key is configured
   	Note: This is not needed for OllamaApi because its already created as a bean by Spring AI's auto-configuration
