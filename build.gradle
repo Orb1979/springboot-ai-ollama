@@ -46,9 +46,23 @@ dependencies {
     testCompileOnly 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.projectlombok:lombok'
 }
-
+ // excluded integration-tests from test
+ // ./gradlew test --tests
 tasks.named('test') {
     useJUnitPlatform()
-    // Keep slow real-model *IT classes out of the default unit-test run.
     exclude '**/*IT.class'
+}
+
+// create task integrationTest
+// export OPENAI_API_KEY='your_actual_api_key_here' &&  ./gradlew integrationTest --tests
+// or: Gradle > Verification > IntegrationTest > right click > modify runtime config > add env key
+tasks.register('integrationTest', Test) {
+    description = 'Runs integration tests.'
+    group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform()
+    // Only run integration tests.
+    include '**/*IT.class'
+    shouldRunAfter test
 }
