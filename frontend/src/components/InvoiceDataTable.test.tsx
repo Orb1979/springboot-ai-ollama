@@ -26,8 +26,7 @@ function sampleInvoice(
 }
 
 describe('InvoiceDataTable', () => {
-  it('filters rows across columns with the search box', async () => {
-    const user = userEvent.setup()
+  it('renders the provided invoices and result label', () => {
     render(
       <InvoiceDataTable
         invoices={[
@@ -40,17 +39,13 @@ describe('InvoiceDataTable', () => {
           }),
         ]}
         onEdit={vi.fn()}
+        resultLabel="2 search results"
       />,
     )
 
     expect(screen.getByText('Acme Supplies')).toBeInTheDocument()
     expect(screen.getByText('Beta Goods')).toBeInTheDocument()
-
-    await user.type(screen.getByLabelText('Search'), 'Beta')
-
-    expect(screen.queryByText('Acme Supplies')).not.toBeInTheDocument()
-    expect(screen.getByText('Beta Goods')).toBeInTheDocument()
-    expect(screen.getByText('1 of 2 invoices')).toBeInTheDocument()
+    expect(screen.getByText('2 search results')).toBeInTheDocument()
   })
 
   it('sorts when a column header is clicked', async () => {
@@ -78,17 +73,5 @@ describe('InvoiceDataTable', () => {
     const descRows = screen.getAllByRole('row').slice(1)
     expect(descRows[0]).toHaveTextContent('Zebra')
     expect(descRows[1]).toHaveTextContent('Alpha')
-  })
-
-  it('keeps the current column set without street or city', () => {
-    render(
-      <InvoiceDataTable invoices={[sampleInvoice()]} onEdit={vi.fn()} />,
-    )
-
-    expect(screen.getByRole('columnheader', { name: 'ID' })).toBeInTheDocument()
-    expect(screen.getByText('99.90')).toBeInTheDocument()
-    expect(screen.getAllByText('2026-09-15 11:22').length).toBeGreaterThan(0)
-    expect(screen.queryByRole('columnheader', { name: 'Street' })).toBeNull()
-    expect(screen.queryByRole('columnheader', { name: 'City' })).toBeNull()
   })
 })

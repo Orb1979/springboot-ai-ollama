@@ -7,11 +7,17 @@ Spring Boot > Spring AI > Ollama > local LLM
 Spring Boot > Spring AI > openai > open ai LLM
 
 ```
-# Download a model
-ollama pull llama3.2
+# Start Postgres with pgvector (required for semantic invoice search)
+docker compose up -d
 
-# set the model in application.propterties
-spring.ai.ollama.chat.model=llama3.2
+# Download chat + embedding models
+ollama pull qwen3.5:9b
+ollama pull nomic-embed-text
+
+# set models in application.properties (chat + embeddings)
+# app.ai.embedding.provider=ollama
+# app.ai.embedding.model=nomic-embed-text
+# spring.ai.vectorstore.pgvector.dimensions=768
 
 # check if ollama is running, if this gives some result is running correctly
 ollama ps
@@ -28,7 +34,14 @@ export OPENAI_API_KEY=sk-...
 
 # test with e.g
 curl http://localhost:8080/ai/chat/test
+
+# semantic invoice search (optional filters: minAmount, maxAmount, currency, fromDate, toDate)
+curl "http://localhost:8080/ai/invoices/search?q=electrician%20around%20500&currency=EUR"
 ```
+
+Switching embedding providers (Ollama ↔ OpenAI) requires matching
+`app.ai.embedding.*` and `spring.ai.vectorstore.pgvector.dimensions`, then
+recreating/clearing the `vector_store` table so embeddings are rebuilt.
 
 ## Frontend
 
@@ -187,11 +200,11 @@ Possible improvements:
 
 1
 Tool calling / function calling \
-Spring AI supports @Tool-annotated methods that the LLM can decide to invoke mid-conversation (e.g. 'look up this supplier in our database' or 'convert this currency'). This is the natural next concept after simple prompt-in/structured-object-out, and it's how most real agentic systems are built.
+   Spring AI supports @Tool-annotated methods that the LLM can decide to invoke mid-conversation (e.g. 'look up this supplier in our database' or 'convert this currency'). This is the natural next concept after simple prompt-in/structured-object-out, and it's how most real agentic systems are built.
 
 2
-RAG (retrieval-augmented generation) \
-Add a vector store (pgvector works well since you're already on PostgreSQL) and try answering questions over a larger document instead of single-shot extraction - e.g. 'which invoices from this supplier are overdue' across many stored invoices. This is the standard next step after basic prompt/structured-output work.
+RAG over invoice search \
+Semantic invoice search with pgvector is in place. The next step is wiring chat answers to retrieved invoices (RAG) so a conversation can answer 'which invoices from this supplier are overdue' with citations.
 
 3
 Observability and evals at scale \

@@ -1,5 +1,10 @@
-import { useEffect, useState } from 'react'
-import { listInvoices, updateInvoice } from '../api/client'
+import { useEffect, useState, type FormEvent } from 'react'
+import {
+  listInvoices,
+  searchInvoices,
+  updateInvoice,
+  type InvoiceSearchParams,
+} from '../api/client'
 import type { InvoiceResponse } from '../api/types'
 import { InvoiceDataTable } from './InvoiceDataTable'
 import { InvoiceEditableFields } from './InvoiceEditableFields'
@@ -14,6 +19,15 @@ type InvoiceListProps = {
   active: boolean
 }
 
+const emptySearch: InvoiceSearchParams = {
+  q: '',
+  minAmount: '',
+  maxAmount: '',
+  currency: '',
+  fromDate: '',
+  toDate: '',
+}
+
 export function InvoiceList({ active }: InvoiceListProps) {
   const [invoices, setInvoices] = useState<InvoiceResponse[]>([])
   const [editingInvoice, setEditingInvoice] = useState<InvoiceResponse | null>(
@@ -23,6 +37,11 @@ export function InvoiceList({ active }: InvoiceListProps) {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isSearching, setIsSearching] = useState(false)
+  const [searchDraft, setSearchDraft] = useState<InvoiceSearchParams>(emptySearch)
+  const [activeSearch, setActiveSearch] = useState<InvoiceSearchParams | null>(
+    null,
+  )
 
   useEffect(() => {
     if (!active) {
@@ -32,6 +51,8 @@ export function InvoiceList({ active }: InvoiceListProps) {
     let cancelled = false
     setIsLoading(true)
     setError('')
+    setActiveSearch(null)
+    setSearchDraft(emptySearch)
 
     void listInvoices()
       .then((items) => {
@@ -93,6 +114,43 @@ export function InvoiceList({ active }: InvoiceListProps) {
     }
   }
 
+  async function handleSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setIsSearching(true)
+    setError('')
+    try {
+      const results = await searchInvoices(searchDraft)
+      setInvoices(results)
+      setActiveSearch(searchDraft)
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : 'Unable to search invoices.',
+      )
+    } finally {
+      setIsSearching(false)
+    }
+  }
+
+  async function handleClearSearch() {
+    setIsSearching(true)
+    setError('')
+    setSearchDraft(emptySearch)
+    setActiveSearch(null)
+    try {
+      setInvoices(await listInvoices())
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : 'Unable to load invoices.',
+      )
+    } finally {
+      setIsSearching(false)
+    }
+  }
+
   if (editingInvoice && editDraft) {
     const editDirty = isDraftDirty(editDraft, editingInvoice)
 
@@ -143,17 +201,123 @@ export function InvoiceList({ active }: InvoiceListProps) {
     )
   }
 
+  const resultLabel = activeSearch
+    ? `${invoices.length} search result${invoices.length === 1 ? '' : 's'}`
+    : undefined
+
   return (
     <section
       className="tool-panel"
       aria-labelledby="invoice-list-heading"
-      aria-busy={isLoading}
+      aria-busy={isLoading || isSearching}
     >
       <div className="panel-heading">
         <p className="eyebrow">Document intelligence</p>
         <h2 id="invoice-list-heading">Uploaded invoices</h2>
-        <p>Review every stored invoice and open one to edit.</p>
+        <p>
+          Search by meaning (for example “electrician around €500”) and optionally
+          narrow by amount, currency, or date.
+        </p>
       </div>
+      <form className="invoice-search-form" onSubmit={(event) => void handleSearch(event)}>
+        <label className="invoice-search-field" htmlFor="invoice-semantic-search">
+          <span>Semantic search</span>
+          <input
+            id="invoice-semantic-search"
+            type="search"
+            value={searchDraft.q ?? ''}
+            placeholder="e.g. office supplies last quarter"
+            onChange={(event) =>
+              setSearchDraft((current) => ({ ...current, q: event.target.value }))
+            }
+          />
+        </label>
+        <div className="invoice-search-filters">
+          <label htmlFor="invoice-min-amount">
+            <span>Min amount</span>
+            <input
+              id="invoice-min-amount"
+              inputMode="decimal"
+              value={searchDraft.minAmount ?? ''}
+              onChange={(event) =>
+                setSearchDraft((current) => ({
+                  ...current,
+                  minAmount: event.target.value,
+                }))
+              }
+            />
+          </label>
+          <label htmlFor="invoice-max-amount">
+            <span>Max amount</span>
+            <input
+              id="invoice-max-amount"
+              inputMode="decimal"
+              value={searchDraft.maxAmount ?? ''}
+              onChange={(event) =>
+                setSearchDraft((current) => ({
+                  ...current,
+                  maxAmount: event.target.value,
+                }))
+              }
+            />
+          </label>
+          <label htmlFor="invoice-currency">
+            <span>Currency</span>
+            <input
+              id="invoice-currency"
+              value={searchDraft.currency ?? ''}
+              placeholder="EUR"
+              onChange={(event) =>
+                setSearchDraft((current) => ({
+                  ...current,
+                  currency: event.target.value,
+                }))
+              }
+            />
+          </label>
+          <label htmlFor="invoice-from-date">
+            <span>From date</span>
+            <input
+              id="invoice-from-date"
+              type="date"
+              value={searchDraft.fromDate ?? ''}
+              onChange={(event) =>
+                setSearchDraft((current) => ({
+                  ...current,
+                  fromDate: event.target.value,
+                }))
+              }
+            />
+          </label>
+          <label htmlFor="invoice-to-date">
+            <span>To date</span>
+            <input
+              id="invoice-to-date"
+              type="date"
+              value={searchDraft.toDate ?? ''}
+              onChange={(event) =>
+                setSearchDraft((current) => ({
+                  ...current,
+                  toDate: event.target.value,
+                }))
+              }
+            />
+          </label>
+        </div>
+        <div className="form-actions form-actions-split">
+          <button
+            className="secondary-button"
+            type="button"
+            disabled={isSearching || (!activeSearch && !searchDraft.q)}
+            onClick={() => void handleClearSearch()}
+          >
+            Show all
+          </button>
+          <button className="primary-button" type="submit" disabled={isSearching}>
+            {isSearching ? 'Searching…' : 'Search'}
+          </button>
+        </div>
+      </form>
       {error && (
         <p className="status-message error" role="alert" aria-label={error}>
           {error}
@@ -165,7 +329,11 @@ export function InvoiceList({ active }: InvoiceListProps) {
         </p>
       )}
       {!isLoading && (
-        <InvoiceDataTable invoices={invoices} onEdit={openEdit} />
+        <InvoiceDataTable
+          invoices={invoices}
+          onEdit={openEdit}
+          resultLabel={resultLabel}
+        />
       )}
     </section>
   )

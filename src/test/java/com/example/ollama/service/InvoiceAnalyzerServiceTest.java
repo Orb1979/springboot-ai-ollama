@@ -42,6 +42,7 @@ class InvoiceAnalyzerServiceTest {
 	@Mock	private TextExtractor textExtractor;
 	@Mock	private InvoiceValidator invoiceValidator;
 	@Mock	private InvoiceRepository invoiceRepository;
+	@Mock	private InvoiceEmbeddingService invoiceEmbeddingService;
 	private InvoiceAnalyzerService invoiceAnalyzerService;
 
 	@BeforeEach
@@ -51,7 +52,8 @@ class InvoiceAnalyzerServiceTest {
 				fileTypeDetector,
 				List.of(textExtractor),
 				invoiceValidator,
-				invoiceRepository
+				invoiceRepository,
+				invoiceEmbeddingService
 		);
 	}
 
@@ -70,6 +72,7 @@ class InvoiceAnalyzerServiceTest {
 		assertThat(actual.getUpdatedDate()).isNull();
 		verify(invoiceValidator).validate(any(Invoice.class));
 		verify(invoiceRepository).save(any());
+		verify(invoiceEmbeddingService).indexInvoice(any(Invoice.class));
 	}
 
 	@Test
@@ -143,6 +146,23 @@ class InvoiceAnalyzerServiceTest {
 		assertThat(result.getPaymentReceivedDate()).isEqualTo(Instant.parse("2024-05-01T11:22:00Z"));
 		assertThat(result.getUpdatedDate()).isNotNull();
 		verify(invoiceValidator).validate(any(Invoice.class));
+		verify(invoiceEmbeddingService).indexInvoice(any(Invoice.class));
+	}
+
+	@Test
+	void analyzeInvoice_indexingFailure_deletesSavedInvoice() throws Exception {
+		givenValidFile();
+		mockChatClientChain(validInvoiceJson());
+		givenPersistedInvoice(55L);
+		org.mockito.Mockito.doThrow(new InvoiceAnalyzeException("vector store down"))
+				.when(invoiceEmbeddingService).indexInvoice(any(Invoice.class));
+
+		assertThatThrownBy(() -> invoiceAnalyzerService.analyzeInvoice(createTextFile()))
+				.isInstanceOf(InvoiceAnalyzeException.class)
+				.hasMessageContaining("vector store down");
+
+		verify(invoiceRepository).deleteById(55L);
+		verify(invoiceEmbeddingService).removeInvoice(55L);
 	}
 
 	@Test

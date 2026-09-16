@@ -298,12 +298,33 @@ textarea:focus {
   display: grid;
   gap: 6px;
   flex: 1 1 220px;
-  max-width: 360px;
+  max-width: 520px;
   color: var(--muted);
   font-size: 0.82rem;
   font-weight: 600;
 }
 
+.invoice-search-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.invoice-search-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.invoice-search-filters label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.invoice-search-filters input,
 .invoice-search-field input {
   width: 100%;
   min-width: 0;

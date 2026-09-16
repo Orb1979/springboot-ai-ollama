@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { analyzeInvoice, listInvoices, sendChat, updateInvoice } from './client'
+import {
+  analyzeInvoice,
+  listInvoices,
+  searchInvoices,
+  sendChat,
+  updateInvoice,
+} from './client'
 
 describe('API client', () => {
   afterEach(() => {
@@ -104,6 +110,29 @@ describe('API client', () => {
     expect(fetchMock.mock.calls[0][0]).toBe('/ai/invoices')
     expect(fetchMock.mock.calls[1][0]).toBe('/ai/invoices/7')
     expect(fetchMock.mock.calls[1][1]).toMatchObject({ method: 'PUT' })
+  })
+
+  it('searches invoices with query and filter params', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify([]), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(
+      searchInvoices({
+        q: 'electrician',
+        minAmount: '100',
+        currency: 'EUR',
+        fromDate: '2024-01-01',
+      }),
+    ).resolves.toEqual([])
+
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      '/ai/invoices/search?q=electrician&minAmount=100&currency=EUR&fromDate=2024-01-01',
+    )
   })
 
   it('uses a backend error message when a request fails', async () => {

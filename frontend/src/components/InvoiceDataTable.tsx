@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import {
   columnFilteringFeature,
   columnSizingFeature,
@@ -32,6 +32,7 @@ const columnHelper = createColumnHelper<typeof features, InvoiceResponse>()
 type InvoiceDataTableProps = {
   invoices: InvoiceResponse[]
   onEdit: (invoice: InvoiceResponse) => void
+  resultLabel?: string
 }
 
 function columnWidthStyle(size: number, totalSize: number) {
@@ -40,9 +41,11 @@ function columnWidthStyle(size: number, totalSize: number) {
   }
 }
 
-export function InvoiceDataTable({ invoices, onEdit }: InvoiceDataTableProps) {
-  const [globalFilter, setGlobalFilter] = useState('')
-
+export function InvoiceDataTable({
+  invoices,
+  onEdit,
+  resultLabel,
+}: InvoiceDataTableProps) {
   const columns = useMemo(
     () =>
       columnHelper.columns([
@@ -133,33 +136,19 @@ export function InvoiceDataTable({ invoices, onEdit }: InvoiceDataTableProps) {
     columns,
     data: invoices,
     getRowId: (row) => String(row.id),
-    globalFilterFn: 'includesString',
-    state: {
-      globalFilter,
-    },
-    onGlobalFilterChange: setGlobalFilter,
   })
 
   const rows = table.getRowModel().rows
   const totalSize = table.getTotalSize()
+  const countLabel =
+    resultLabel ??
+    `${invoices.length} invoice${invoices.length === 1 ? '' : 's'}`
 
   return (
     <div className="invoice-table-panel">
       <div className="invoice-table-toolbar">
-        <label className="invoice-search-field" htmlFor="invoice-search">
-          <span>Search</span>
-          <input
-            id="invoice-search"
-            type="search"
-            value={globalFilter}
-            placeholder="Search all columns…"
-            onChange={(event) => setGlobalFilter(event.target.value)}
-          />
-        </label>
         <p className="invoice-result-count" role="status">
-          {rows.length === invoices.length
-            ? `${invoices.length} invoice${invoices.length === 1 ? '' : 's'}`
-            : `${rows.length} of ${invoices.length} invoices`}
+          {countLabel}
         </p>
       </div>
       <div className="invoice-table-wrap">
@@ -239,9 +228,6 @@ export function InvoiceDataTable({ invoices, onEdit }: InvoiceDataTableProps) {
           </tbody>
         </table>
         {invoices.length === 0 && (
-          <p className="empty-state">No invoices have been uploaded yet.</p>
-        )}
-        {invoices.length > 0 && rows.length === 0 && (
           <p className="empty-state">No invoices match your search.</p>
         )}
       </div>

@@ -1,16 +1,18 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { listInvoices, updateInvoice } from '../api/client'
+import { listInvoices, searchInvoices, updateInvoice } from '../api/client'
 import type { InvoiceResponse } from '../api/types'
 import { InvoiceList } from './InvoiceList'
 
 vi.mock('../api/client', () => ({
   listInvoices: vi.fn(),
+  searchInvoices: vi.fn(),
   updateInvoice: vi.fn(),
 }))
 
 const listInvoicesMock = vi.mocked(listInvoices)
+const searchInvoicesMock = vi.mocked(searchInvoices)
 const updateInvoiceMock = vi.mocked(updateInvoice)
 
 function sampleInvoice(
@@ -37,6 +39,7 @@ function sampleInvoice(
 describe('InvoiceList', () => {
   beforeEach(() => {
     listInvoicesMock.mockReset()
+    searchInvoicesMock.mockReset()
     updateInvoiceMock.mockReset()
   })
 
@@ -73,5 +76,33 @@ describe('InvoiceList', () => {
     expect(screen.queryByRole('columnheader', { name: 'Street' })).toBeNull()
     expect(screen.queryByRole('columnheader', { name: 'Number' })).toBeNull()
     expect(screen.queryByRole('columnheader', { name: 'City' })).toBeNull()
+  })
+
+  it('runs a semantic search with optional filters', async () => {
+    listInvoicesMock.mockResolvedValue([sampleInvoice()])
+    searchInvoicesMock.mockResolvedValue([
+      sampleInvoice({ id: 9, supplier: 'Electric Works', amount: 480 }),
+    ])
+    const user = userEvent.setup()
+    render(<InvoiceList active />)
+
+    expect(await screen.findByText('Acme Supplies')).toBeInTheDocument()
+    await user.type(
+      screen.getByLabelText('Semantic search'),
+      'electrician around 500',
+    )
+    await user.type(screen.getByLabelText('Min amount'), '100')
+    await user.type(screen.getByLabelText('Currency'), 'EUR')
+    await user.click(screen.getByRole('button', { name: 'Search' }))
+
+    expect(searchInvoicesMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        q: 'electrician around 500',
+        minAmount: '100',
+        currency: 'EUR',
+      }),
+    )
+    expect(await screen.findByText('Electric Works')).toBeInTheDocument()
+    expect(screen.getByText('1 search result')).toBeInTheDocument()
   })
 })
