@@ -1,6 +1,7 @@
 package com.example.ollama.mapper;
 
 import com.example.ollama.dto.InvoiceResponse;
+import com.example.ollama.dto.InvoiceSearchHit;
 import com.example.ollama.entity.Invoice;
 import org.junit.jupiter.api.Test;
 
@@ -38,5 +39,30 @@ class InvoiceMapperTest {
 		assertThat(response.uploadedDate()).isEqualTo(Instant.parse("2026-09-15T10:00:00Z"));
 		assertThat(response.paymentReceivedDate()).isEqualTo(Instant.parse("2026-09-16T11:00:00Z"));
 		assertThat(response.updatedDate()).isEqualTo(Instant.parse("2026-09-17T12:00:00Z"));
+		assertThat(response.similarityScore()).isNull();
+	}
+
+	@Test
+	void toResponse_fromSearchHit_includesSimilarityScore() {
+		Invoice invoice = new Invoice(
+				42L,
+				"Acme Corp",
+				"Main Street",
+				"42A",
+				"Amsterdam",
+				"1012 AB",
+				"INV-001",
+				LocalDate.of(2024, 3, 12),
+				new BigDecimal("99.90"),
+				"EUR",
+				Instant.parse("2026-09-15T10:00:00Z"),
+				null,
+				null
+		);
+
+		InvoiceResponse response = InvoiceMapper.toResponse(new InvoiceSearchHit(invoice, 0.812));
+
+		assertThat(response.id()).isEqualTo(42L);
+		assertThat(response.similarityScore()).isEqualTo(0.812);
 	}
 }

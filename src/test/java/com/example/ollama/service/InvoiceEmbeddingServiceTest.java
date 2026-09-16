@@ -1,6 +1,7 @@
 package com.example.ollama.service;
 
 import com.example.ollama.dto.InvoiceSearchCriteria;
+import com.example.ollama.dto.InvoiceSearchHit;
 import com.example.ollama.entity.Invoice;
 import com.example.ollama.exception.InvoiceAnalyzeException;
 import com.example.ollama.repo.InvoiceRepository;
@@ -81,22 +82,23 @@ class InvoiceEmbeddingServiceTest {
 	}
 
 	@Test
-	void search_withoutQuery_filtersAllInvoices() {
+	void search_withoutQuery_filtersAllInvoicesWithNullScores() {
 		when(invoiceRepository.findAll()).thenReturn(List.of(
 				sample(1L),
 				sample(2L, new BigDecimal("500.00"), "USD", LocalDate.of(2023, 1, 1))
 		));
 
-		List<Invoice> results = service.search(new InvoiceSearchCriteria(
+		List<InvoiceSearchHit> results = service.search(new InvoiceSearchCriteria(
 				null, new BigDecimal("50"), new BigDecimal("200"), "EUR",
 				LocalDate.of(2024, 1, 1), LocalDate.of(2024, 12, 31), 20));
 
-		assertThat(results).extracting(Invoice::getId).containsExactly(1L);
+		assertThat(results).extracting(hit -> hit.invoice().getId()).containsExactly(1L);
+		assertThat(results).extracting(InvoiceSearchHit::similarityScore).containsExactly((Double) null);
 		verify(vectorStore, never()).similaritySearch(any(SearchRequest.class));
 	}
 
 	@Test
-	void search_withQuery_ordersByScoreDescendingAndAppliesFilters() {
+	void search_withQuery_ordersByScoreDescendingAndExposesScores() {
 		Document lowerScoreFirstInList = Document.builder()
 				.id(InvoiceEmbeddingService.documentIdFor(2L))
 				.text("Supplier: Bright Office Supplies Ltd")
@@ -113,10 +115,16 @@ class InvoiceEmbeddingServiceTest {
 				.thenReturn(List.of(lowerScoreFirstInList, higherScoreSecondInList));
 		when(invoiceRepository.findAllById(any())).thenReturn(List.of(sample(1L), sample(2L)));
 
-		List<Invoice> results = service.search(new InvoiceSearchCriteria(
-				"show me all suppliers with name acme corp", null, null, null, null, null, 20));
+		String query = "show me all suppliers with name acme corp";
+		List<InvoiceSearchHit> results = service.search(new InvoiceSearchCriteria(
+				query, null, null, null, null, null, 20));
 
-		assertThat(results).extracting(Invoice::getId).containsExactly(1L, 2L);
+		assertThat(results).extracting(hit -> hit.invoice().getId()).containsExactly(1L, 2L);
+		assertThat(results.get(0).similarityScore())
+				.isEqualTo(InvoiceEmbeddingService.rankingScore(higherScoreSecondInList, query));
+		assertThat(results.get(1).similarityScore())
+				.isEqualTo(InvoiceEmbeddingService.rankingScore(lowerScoreFirstInList, query));
+		assertThat(results.get(0).similarityScore()).isGreaterThan(results.get(1).similarityScore());
 	}
 
 	@Test
@@ -152,10 +160,12 @@ class InvoiceEmbeddingServiceTest {
 				sample(1L),
 				sample(2L, "Bright Office Supplies Ltd", new BigDecimal("99.90"), "EUR", LocalDate.of(2024, 3, 12))));
 
-		List<Invoice> results = service.search(new InvoiceSearchCriteria(
-				"show me all suppliers with name acme corp", null, null, null, null, null, 20));
+		String query = "show me all suppliers with name acme corp";
+		List<InvoiceSearchHit> results = service.search(new InvoiceSearchCriteria(
+				query, null, null, null, null, null, 20));
 
-		assertThat(results).extracting(Invoice::getId).containsExactly(1L, 2L);
+		assertThat(results).extracting(hit -> hit.invoice().getId()).containsExactly(1L, 2L);
+		assertThat(results.get(0).similarityScore()).isGreaterThan(results.get(1).similarityScore());
 	}
 
 	private Invoice sample(Long id) {

@@ -30,6 +30,7 @@ function sampleInvoice(
     uploadedDate: '2026-09-15T10:30:00Z',
     paymentReceivedDate: null,
     updatedDate: null,
+    similarityScore: null,
     ...overrides,
   }
 }

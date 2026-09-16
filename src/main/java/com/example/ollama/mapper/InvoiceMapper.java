@@ -1,6 +1,7 @@
 package com.example.ollama.mapper;
 
 import com.example.ollama.dto.InvoiceResponse;
+import com.example.ollama.dto.InvoiceSearchHit;
 import com.example.ollama.entity.Invoice;
 
 public final class InvoiceMapper {
@@ -8,6 +9,14 @@ public final class InvoiceMapper {
 	private InvoiceMapper() {}
 
 	public static InvoiceResponse toResponse(Invoice invoice) {
+		return toResponse(invoice, null);
+	}
+
+	public static InvoiceResponse toResponse(InvoiceSearchHit hit) {
+		return toResponse(hit.invoice(), hit.similarityScore());
+	}
+
+	private static InvoiceResponse toResponse(Invoice invoice, Double similarityScore) {
 		return new InvoiceResponse(
 				invoice.getId(),
 				invoice.getSupplier(),
@@ -21,7 +30,8 @@ public final class InvoiceMapper {
 				invoice.getCurrency(),
 				invoice.getUploadedDate(),
 				invoice.getPaymentReceivedDate(),
-				invoice.getUpdatedDate()
+				invoice.getUpdatedDate(),
+				similarityScore
 		);
 	}
 }
