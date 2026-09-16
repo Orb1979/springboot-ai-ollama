@@ -117,17 +117,18 @@ public class InvoiceAnalyzerService {
 	}
 
 	// simple version without retries
-	private InvoiceResponse analyzeInvoiceText(String invoiceText) {
-		InvoiceResponse invoiceResponse = chatClient
-				                                  .prompt()
-				                                  .user(invoicePrompt.formatted(invoiceText))
-				                                  .call()
-				                                  .entity(InvoiceResponse.class);
+	private InvoiceExtractionResponse analyzeInvoiceText(String invoiceText) {
+		InvoiceExtractionResponse invoiceResponse =
+				chatClient
+          .prompt()
+          .user(invoicePrompt.formatted(invoiceText))
+          .call()
+          .entity(InvoiceExtractionResponse.class);
 
 		if (invoiceResponse == null) {
 			throw new InvoiceAnalyzeException("Failed to extract invoice information");
 		}
-		return saveInvoice(invoiceResponse);
+		return invoiceResponse;
 	}
 
 	// use Spring AI BeanOutputConverter getFormat() to generate the schema, instead of chatClient.entity()

@@ -21,40 +21,4 @@ public record InvoiceResponse(
 		Instant paymentReceivedDate,
 		Instant updatedDate
 ) {
-
-	public static InvoiceResponse from(InvoiceExtractionResponse extraction, Instant uploadedDate) {
-		return new InvoiceResponse(
-				null,
-				extraction.supplier(),
-				extraction.supplierStreet(),
-				extraction.supplierStreetNumber(),
-				extraction.supplierCity(),
-				extraction.supplierPostalCode(),
-				extraction.invoiceNumber(),
-				extraction.invoiceDate(),
-				extraction.amount(),
-				extraction.currency(),
-				uploadedDate,
-				null,
-				null
-		);
-	}
-
-	public static InvoiceResponse from(Invoice invoice) {
-		return new InvoiceResponse(
-				invoice.getId(),
-				invoice.getSupplier(),
-				invoice.getSupplierStreet(),
-				invoice.getSupplierStreetNumber(),
-				invoice.getSupplierCity(),
-				invoice.getSupplierPostalCode(),
-				invoice.getInvoiceNumber(),
-				invoice.getInvoiceDate(),
-				invoice.getAmount(),
-				invoice.getCurrency(),
-				invoice.getUploadedDate(),
-				invoice.getPaymentReceivedDate(),
-				invoice.getUpdatedDate()
-		);
-	}
 }
