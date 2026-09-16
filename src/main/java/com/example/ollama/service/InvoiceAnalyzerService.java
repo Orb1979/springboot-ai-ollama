@@ -1,6 +1,7 @@
 package com.example.ollama.service;
 
 import com.example.ollama.dto.InvoiceExtractionResponse;
+import com.example.ollama.dto.InvoiceSearchCriteria;
 import com.example.ollama.dto.InvoiceUpdateRequest;
 import com.example.ollama.domain.FileType;
 import com.example.ollama.entity.Invoice;
@@ -27,6 +28,7 @@ public class InvoiceAnalyzerService {
 	private final List<TextExtractor> textExtractors;
 	private final InvoiceValidator invoiceValidator;
 	private final InvoiceRepository invoiceRepository;
+	private final InvoiceEmbeddingService invoiceEmbeddingService;
 
 	private static final String invoicePrompt = """
 			Extract the following information from this invoice:
@@ -63,12 +65,14 @@ public class InvoiceAnalyzerService {
 	    FileTypeDetector fileTypeDetector,
 	    List<TextExtractor> textExtractors,
 	    InvoiceValidator invoiceValidator,
-	    InvoiceRepository invoiceRepository) {
+	    InvoiceRepository invoiceRepository,
+	    InvoiceEmbeddingService invoiceEmbeddingService) {
 		this.chatClient = chatClient;
 		this.fileTypeDetector = fileTypeDetector;
 		this.textExtractors = textExtractors;
 		this.invoiceValidator = invoiceValidator;
 		this.invoiceRepository = invoiceRepository;
+		this.invoiceEmbeddingService = invoiceEmbeddingService;
 	}
 
 	public Invoice analyzeInvoice(MultipartFile file) throws IOException {
@@ -82,11 +86,23 @@ public class InvoiceAnalyzerService {
 		InvoiceExtractionResponse extraction = analyzeInvoiceText(invoiceText, MAX_ATTEMPTS);
 		Invoice invoice = toInvoice(extraction, uploadedDate);
 		invoiceValidator.validate(invoice);
-		return invoiceRepository.save(invoice);
+		Invoice saved = invoiceRepository.save(invoice);
+		try {
+			invoiceEmbeddingService.indexInvoice(saved);
+		} catch (RuntimeException ex) {
+			invoiceRepository.deleteById(saved.getId());
+			invoiceEmbeddingService.removeInvoice(saved.getId());
+			throw ex;
+		}
+		return saved;
 	}
 
 	public List<Invoice> listInvoices() {
 		return invoiceRepository.findAll();
+	}
+
+	public List<Invoice> searchInvoices(InvoiceSearchCriteria criteria) {
+		return invoiceEmbeddingService.search(criteria);
 	}
 
 	public Invoice updateInvoice(Long id, InvoiceUpdateRequest update) {
@@ -106,7 +122,9 @@ public class InvoiceAnalyzerService {
 		invoiceValidator.validate(invoice);
 		invoice.setUpdatedDate(Instant.now());
 
-		return invoiceRepository.save(invoice);
+		Invoice saved = invoiceRepository.save(invoice);
+		invoiceEmbeddingService.indexInvoice(saved);
+		return saved;
 	}
 
 	private TextExtractor findTextExtractor(FileType fileType) {

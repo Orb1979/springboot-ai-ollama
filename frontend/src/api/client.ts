@@ -2,8 +2,17 @@ import type {
   ConversationRequest,
   ConversationResponse,
   InvoiceResponse,
-  InvoiceUpdateRequest,
 } from './types'
+
+export type InvoiceSearchParams = {
+  q?: string
+  minAmount?: string
+  maxAmount?: string
+  currency?: string
+  fromDate?: string
+  toDate?: string
+  limit?: number
+}
 
 async function errorMessage(response: Response): Promise<string> {
   const fallback = `Request failed (${response.status})`
@@ -60,9 +69,42 @@ export async function listInvoices(): Promise<InvoiceResponse[]> {
   return responseJson<InvoiceResponse[]>(response)
 }
 
+export async function searchInvoices(
+  params: InvoiceSearchParams,
+): Promise<InvoiceResponse[]> {
+  const query = new URLSearchParams()
+  if (params.q?.trim()) {
+    query.set('q', params.q.trim())
+  }
+  if (params.minAmount?.trim()) {
+    query.set('minAmount', params.minAmount.trim())
+  }
+  if (params.maxAmount?.trim()) {
+    query.set('maxAmount', params.maxAmount.trim())
+  }
+  if (params.currency?.trim()) {
+    query.set('currency', params.currency.trim())
+  }
+  if (params.fromDate?.trim()) {
+    query.set('fromDate', params.fromDate.trim())
+  }
+  if (params.toDate?.trim()) {
+    query.set('toDate', params.toDate.trim())
+  }
+  if (params.limit != null) {
+    query.set('limit', String(params.limit))
+  }
+
+  const suffix = query.toString()
+  const response = await fetch(
+    suffix ? `/ai/invoices/search?${suffix}` : '/ai/invoices/search',
+  )
+  return responseJson<InvoiceResponse[]>(response)
+}
+
 export async function updateInvoice(
   id: number,
-  invoice: InvoiceUpdateRequest,
+  invoice: InvoiceResponse,
 ): Promise<InvoiceResponse> {
   const response = await fetch(`/ai/invoices/${id}`, {
     method: 'PUT',

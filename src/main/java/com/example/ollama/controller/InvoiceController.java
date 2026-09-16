@@ -1,12 +1,14 @@
 package com.example.ollama.controller;
 
 import com.example.ollama.dto.InvoiceResponse;
+import com.example.ollama.dto.InvoiceSearchCriteria;
 import com.example.ollama.dto.InvoiceUpdateRequest;
 import com.example.ollama.exception.InvoiceAnalyzeException;
 import com.example.ollama.mapper.InvoiceMapper;
 import com.example.ollama.service.InvoiceAnalyzerService;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,6 +20,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -39,6 +43,22 @@ public class InvoiceController {
 	@GetMapping
 	public List<InvoiceResponse> list() {
 		return invoiceAnalyzeService.listInvoices().stream()
+				.map(InvoiceMapper::toResponse)
+				.toList();
+	}
+
+	@GetMapping("/search")
+	public List<InvoiceResponse> search(
+			@RequestParam(required = false) String q,
+			@RequestParam(required = false) BigDecimal minAmount,
+			@RequestParam(required = false) BigDecimal maxAmount,
+			@RequestParam(required = false) String currency,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+			@RequestParam(required = false, defaultValue = "20") int limit) {
+		return invoiceAnalyzeService.searchInvoices(
+						new InvoiceSearchCriteria(q, minAmount, maxAmount, currency, fromDate, toDate, limit))
+				.stream()
 				.map(InvoiceMapper::toResponse)
 				.toList();
 	}
