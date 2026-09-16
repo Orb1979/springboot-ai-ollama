@@ -1,0 +1,28 @@
+# conversation
+curl http://localhost:8080/ai/chat/test
+curl -X POST 'http://localhost:8080/ai/chat' -H 'Content-Type: application/json'  -d '{"question": "Explain what an invoice is"}'
+
+# invoice
+curl -X POST http://localhost:8080/ai/invoices/analyze -F "file=@example-invoice.txt"
+curl -X POST http://localhost:8080/ai/invoices/analyze -F "file=@example-invoice.pdf"
+curl -X POST http://localhost:8080/ai/invoices/analyze -F "file=@example-invoice.png"
+
+curl http://localhost:8080/ai/invoices
+
+curl -X PUT http://localhost:8080/ai/invoices/1 \
+    -H "Content-Type: application/json" \
+    -d '{
+    "id": 1,
+    "supplier": "Acme Supplies",
+    "supplierStreet": "Main Street",
+    "supplierStreetNumber": "42A",
+    "supplierCity": "Amsterdam",
+    "supplierPostalCode": "1012 AB",
+    "invoiceNumber": "INV-2026-42",
+    "invoiceDate": "2024-03-12",
+    "amount": 99.90,
+    "currency": "EUR",
+    "uploadedDate": "2026-09-15T11:22:22.546024Z",
+    "paymentReceivedDate": "2026-09-15T11:22:00Z",
+    "updatedDate": null
+}'

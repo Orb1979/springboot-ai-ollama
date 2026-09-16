@@ -232,10 +232,10 @@ textarea:focus {
 }
 
 .secondary-button {
-  min-width: 148px;
+  min-width: 64px;
   padding: 12px 18px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 6px;
   color: var(--ink);
   background: #fff;
   cursor: pointer;
@@ -261,7 +261,7 @@ textarea:focus {
   width: 100%;
   padding: 12px 14px;
   border: 1px solid var(--line);
-  border-radius: 11px;
+  border-radius: 6px;
   color: var(--ink);
   background: #fff;
 }
@@ -276,7 +276,7 @@ textarea:focus {
   margin: 0;
   padding: 12px 14px;
   border: 1px solid var(--line);
-  border-radius: 11px;
+  border-radius: 6px;
   color: var(--muted);
   background: #f7f6f1;
 }
@@ -309,7 +309,7 @@ textarea:focus {
   min-width: 0;
   padding: 10px 12px;
   border: 1px solid var(--line);
-  border-radius: 11px;
+  border-radius: 6px;
   background: var(--paper);
   color: var(--ink);
 }
@@ -323,7 +323,7 @@ textarea:focus {
 .invoice-table-wrap {
   overflow-x: hidden;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 6px;
 }
 
 .invoice-table {
@@ -446,6 +446,7 @@ textarea:focus {
   align-content: center;
   gap: 8px;
   padding: 28px;
+  margin-bottom: 28px;
   border: 1.5px dashed #b8bab2;
   border-radius: 15px;
   color: var(--muted);

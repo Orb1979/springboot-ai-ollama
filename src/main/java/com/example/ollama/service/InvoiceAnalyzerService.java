@@ -116,6 +116,20 @@ public class InvoiceAnalyzerService {
 				       .orElseThrow(() -> new InvoiceAnalyzeException("No TextExtractor found for file type: " + fileType));
 	}
 
+	// simple version without retries
+	private InvoiceResponse analyzeInvoiceText(String invoiceText) {
+		InvoiceResponse invoiceResponse = chatClient
+				                                  .prompt()
+				                                  .user(invoicePrompt.formatted(invoiceText))
+				                                  .call()
+				                                  .entity(InvoiceResponse.class);
+
+		if (invoiceResponse == null) {
+			throw new InvoiceAnalyzeException("Failed to extract invoice information");
+		}
+		return saveInvoice(invoiceResponse);
+	}
+
 	// use Spring AI BeanOutputConverter getFormat() to generate the schema, instead of chatClient.entity()
 	// get the content first as a string with .content() because .entity() fails immediately on bad JSON,
 	// giving us no chance to inspect or react to it

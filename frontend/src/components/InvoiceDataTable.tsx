@@ -49,18 +49,13 @@ export function InvoiceDataTable({ invoices, onEdit }: InvoiceDataTableProps) {
         columnHelper.accessor('id', {
           header: 'ID',
           cell: (info) => info.getValue(),
-          size: 48,
-          maxSize: 64,
+          size: 30,
+          maxSize: 60,
         }),
         columnHelper.accessor('supplier', {
           header: 'Supplier',
           cell: (info) => info.getValue(),
-          size: 140,
-        }),
-        columnHelper.accessor('supplierPostalCode', {
-          header: 'Postal code',
-          cell: (info) => info.getValue(),
-          size: 90,
+          size: 120,
         }),
         columnHelper.accessor('invoiceNumber', {
           header: 'Invoice number',
@@ -118,7 +113,7 @@ export function InvoiceDataTable({ invoices, onEdit }: InvoiceDataTableProps) {
           header: 'Actions',
           enableSorting: false,
           enableGlobalFilter: false,
-          size: 72,
+          size: 70,
           cell: ({ row }) => (
             <button
               className="secondary-button"
