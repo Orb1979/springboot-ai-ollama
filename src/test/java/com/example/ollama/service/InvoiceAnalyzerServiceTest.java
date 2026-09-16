@@ -1,7 +1,7 @@
 package com.example.ollama.service;
 
 import com.example.ollama.domain.FileType;
-import com.example.ollama.dto.InvoiceResponse;
+import com.example.ollama.dto.InvoiceUpdateRequest;
 import com.example.ollama.entity.Invoice;
 import com.example.ollama.exception.InvoiceAnalyzeException;
 import com.example.ollama.exception.InvoiceNotFoundException;
@@ -40,7 +40,7 @@ class InvoiceAnalyzerServiceTest {
 	@Mock	private ChatClient.CallResponseSpec callResponseSpec;
 	@Mock	private FileTypeDetector fileTypeDetector;
 	@Mock	private TextExtractor textExtractor;
-	@Mock	private InvoiceResponseValidator invoiceResponseValidator;
+	@Mock	private InvoiceValidator invoiceValidator;
 	@Mock	private InvoiceRepository invoiceRepository;
 	private InvoiceAnalyzerService invoiceAnalyzerService;
 
@@ -50,7 +50,7 @@ class InvoiceAnalyzerServiceTest {
 				chatClient,
 				fileTypeDetector,
 				List.of(textExtractor),
-				invoiceResponseValidator,
+				invoiceValidator,
 				invoiceRepository
 		);
 	}
@@ -63,14 +63,12 @@ class InvoiceAnalyzerServiceTest {
 		mockChatClientChain(validJson);
 		givenPersistedInvoice(42L);
 
-		InvoiceResponse actual = invoiceAnalyzerService.analyzeInvoice(file);
+		Invoice actual = invoiceAnalyzerService.analyzeInvoice(file);
 
 		assertExpectedInvoice(actual);
-		assertThat(actual.id()).isEqualTo(42L);
-		assertThat(actual.updatedDate()).isNull();
-		ArgumentCaptor<InvoiceResponse> validated = ArgumentCaptor.forClass(InvoiceResponse.class);
-		verify(invoiceResponseValidator).validate(validated.capture());
-		assertThat(validated.getValue().id()).isNull();
+		assertThat(actual.getId()).isEqualTo(42L);
+		assertThat(actual.getUpdatedDate()).isNull();
+		verify(invoiceValidator).validate(any(Invoice.class));
 		verify(invoiceRepository).save(any());
 	}
 
@@ -80,17 +78,17 @@ class InvoiceAnalyzerServiceTest {
 		mockChatClientChain(validInvoiceJson());
 		givenPersistedInvoice(7L);
 
-		InvoiceResponse response = invoiceAnalyzerService.analyzeInvoice(createTextFile());
+		Invoice invoice = invoiceAnalyzerService.analyzeInvoice(createTextFile());
 
-		assertThat(response.id()).isEqualTo(7L);
-		assertThat(response.supplierStreet()).isEqualTo("Main Street");
-		assertThat(response.supplierStreetNumber()).isEqualTo("42A");
-		assertThat(response.supplierCity()).isEqualTo("Amsterdam");
-		assertThat(response.supplierPostalCode()).isEqualTo("1012 AB");
-		assertThat(response.invoiceDate()).isEqualTo(LocalDate.of(2024, 3, 12));
-		assertThat(response.uploadedDate()).isNotNull();
-		assertThat(response.paymentReceivedDate()).isNull();
-		assertThat(response.updatedDate()).isNull();
+		assertThat(invoice.getId()).isEqualTo(7L);
+		assertThat(invoice.getSupplierStreet()).isEqualTo("Main Street");
+		assertThat(invoice.getSupplierStreetNumber()).isEqualTo("42A");
+		assertThat(invoice.getSupplierCity()).isEqualTo("Amsterdam");
+		assertThat(invoice.getSupplierPostalCode()).isEqualTo("1012 AB");
+		assertThat(invoice.getInvoiceDate()).isEqualTo(LocalDate.of(2024, 3, 12));
+		assertThat(invoice.getUploadedDate()).isNotNull();
+		assertThat(invoice.getPaymentReceivedDate()).isNull();
+		assertThat(invoice.getUpdatedDate()).isNull();
 
 		ArgumentCaptor<Invoice> invoiceCaptor = ArgumentCaptor.forClass(Invoice.class);
 		verify(invoiceRepository).save(invoiceCaptor.capture());
@@ -100,22 +98,22 @@ class InvoiceAnalyzerServiceTest {
 		assertThat(savedInvoice.getSupplierCity()).isEqualTo("Amsterdam");
 		assertThat(savedInvoice.getSupplierPostalCode()).isEqualTo("1012 AB");
 		assertThat(savedInvoice.getInvoiceDate()).isEqualTo(LocalDate.of(2024, 3, 12));
-		assertThat(savedInvoice.getUploadedDate()).isEqualTo(response.uploadedDate());
+		assertThat(savedInvoice.getUploadedDate()).isEqualTo(invoice.getUploadedDate());
 		assertThat(savedInvoice.getPaymentReceivedDate()).isNull();
 		assertThat(savedInvoice.getUpdatedDate()).isNull();
 	}
 
 	@Test
-	void listInvoices_returnsMappedResponses() {
+	void listInvoices_returnsEntities() {
 		Invoice invoice = sampleInvoice(5L, Instant.parse("2026-09-15T10:00:00Z"), null);
 		when(invoiceRepository.findAll()).thenReturn(List.of(invoice));
 
-		List<InvoiceResponse> responses = invoiceAnalyzerService.listInvoices();
+		List<Invoice> invoices = invoiceAnalyzerService.listInvoices();
 
-		assertThat(responses).hasSize(1);
-		assertThat(responses.getFirst().id()).isEqualTo(5L);
-		assertThat(responses.getFirst().supplier()).isEqualTo("Acme Corp");
-		assertThat(responses.getFirst().updatedDate()).isNull();
+		assertThat(invoices).hasSize(1);
+		assertThat(invoices.getFirst().getId()).isEqualTo(5L);
+		assertThat(invoices.getFirst().getSupplier()).isEqualTo("Acme Corp");
+		assertThat(invoices.getFirst().getUpdatedDate()).isNull();
 	}
 
 	@Test
@@ -124,8 +122,7 @@ class InvoiceAnalyzerServiceTest {
 		when(invoiceRepository.findById(9L)).thenReturn(Optional.of(existing));
 		when(invoiceRepository.save(any(Invoice.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-		InvoiceResponse update = new InvoiceResponse(
-				9L,
+		InvoiceUpdateRequest update = new InvoiceUpdateRequest(
 				"Updated Corp",
 				"New Street",
 				"99",
@@ -135,19 +132,17 @@ class InvoiceAnalyzerServiceTest {
 				LocalDate.of(2024, 4, 1),
 				new BigDecimal("150.00"),
 				"USD",
-				Instant.parse("2026-01-01T00:00:00Z"),
-				Instant.parse("2024-05-01T11:22:00Z"),
-				null
+				Instant.parse("2024-05-01T11:22:00Z")
 		);
 
-		InvoiceResponse result = invoiceAnalyzerService.updateInvoice(9L, update);
+		Invoice result = invoiceAnalyzerService.updateInvoice(9L, update);
 
-		assertThat(result.supplier()).isEqualTo("Updated Corp");
-		assertThat(result.supplierStreet()).isEqualTo("New Street");
-		assertThat(result.uploadedDate()).isEqualTo(Instant.parse("2026-09-15T09:00:00Z"));
-		assertThat(result.paymentReceivedDate()).isEqualTo(Instant.parse("2024-05-01T11:22:00Z"));
-		assertThat(result.updatedDate()).isNotNull();
-		verify(invoiceResponseValidator).validate(any(InvoiceResponse.class));
+		assertThat(result.getSupplier()).isEqualTo("Updated Corp");
+		assertThat(result.getSupplierStreet()).isEqualTo("New Street");
+		assertThat(result.getUploadedDate()).isEqualTo(Instant.parse("2026-09-15T09:00:00Z"));
+		assertThat(result.getPaymentReceivedDate()).isEqualTo(Instant.parse("2024-05-01T11:22:00Z"));
+		assertThat(result.getUpdatedDate()).isNotNull();
+		verify(invoiceValidator).validate(any(Invoice.class));
 	}
 
 	@Test
@@ -156,10 +151,9 @@ class InvoiceAnalyzerServiceTest {
 
 		assertThatThrownBy(() -> invoiceAnalyzerService.updateInvoice(
 				404L,
-				new InvoiceResponse(
-						404L, "A", "B", "1", "C", "D", "E",
-						LocalDate.of(2024, 1, 1), new BigDecimal("1.00"), "EUR",
-						Instant.parse("2026-09-15T10:00:00Z"), null, null)))
+				new InvoiceUpdateRequest(
+						"A", "B", "1", "C", "D", "E",
+						LocalDate.of(2024, 1, 1), new BigDecimal("1.00"), "EUR", null)))
 				.isInstanceOf(InvoiceNotFoundException.class)
 				.hasMessageContaining("404");
 		verify(invoiceRepository, never()).save(any());
@@ -177,9 +171,9 @@ class InvoiceAnalyzerServiceTest {
 		mockChatClientChain(validInvoiceJson());
 		givenPersistedInvoice(1L);
 
-		InvoiceResponse response = invoiceAnalyzerService.analyzeInvoice(createTextFile());
+		Invoice invoice = invoiceAnalyzerService.analyzeInvoice(createTextFile());
 
-		assertThat(response.uploadedDate())
+		assertThat(invoice.getUploadedDate())
 				.isBeforeOrEqualTo(extractionStarted.get());
 	}
 
@@ -198,7 +192,7 @@ class InvoiceAnalyzerServiceTest {
 				.isInstanceOf(InvoiceAnalyzeException.class)
 				.hasMessageContaining("No TextExtractor found for file type: IMAGE");
 		verify(invoiceRepository, never()).save(any());
-		verify(invoiceResponseValidator, never()).validate(any());
+		verify(invoiceValidator, never()).validate(any());
 	}
 
 	@Test
@@ -212,7 +206,7 @@ class InvoiceAnalyzerServiceTest {
 				.hasMessageContaining("Model did not return valid JSON after 3 attempts");
 
 		verify(callResponseSpec, times(3)).content();
-		verify(invoiceResponseValidator, never()).validate(any());
+		verify(invoiceValidator, never()).validate(any());
 		verify(invoiceRepository, never()).save(any());
 	}
 
@@ -254,12 +248,12 @@ class InvoiceAnalyzerServiceTest {
 		mockChatClientChain("THIS IS NOT VALID JSON", validInvoiceJson());
 		givenPersistedInvoice(1L);
 
-		InvoiceResponse actual = invoiceAnalyzerService.analyzeInvoice(file);
+		Invoice actual = invoiceAnalyzerService.analyzeInvoice(file);
 
 		assertExpectedInvoice(actual);
 
 		verify(callResponseSpec, times(2)).content();
-		verify(invoiceResponseValidator).validate(any(InvoiceResponse.class));
+		verify(invoiceValidator).validate(any(Invoice.class));
 		verify(invoiceRepository).save(any());
 	}
 
@@ -277,7 +271,7 @@ class InvoiceAnalyzerServiceTest {
 				);
 
 		verify(callResponseSpec, times(3)).content();
-		verify(invoiceResponseValidator, never()).validate(any());
+		verify(invoiceValidator, never()).validate(any());
 		verify(invoiceRepository, never()).save(any());
 	}
 
@@ -296,14 +290,9 @@ class InvoiceAnalyzerServiceTest {
 
 		List<String> prompts = promptCaptor.getAllValues();
 
-		// First attempt contains the invoice text
 		assertThat(prompts.get(0)).contains("Invoice text content");
-
-		// First attempt should not contain correction instruction
 		assertThat(prompts.get(0)).doesNotContain("Your previous response could not be parsed");
 		assertThat(prompts.get(1)).contains("Your previous response could not be parsed as valid JSON");
-
-		// The original invoice text should still be present
 		assertThat(prompts.get(1)).contains("Invoice text content");
 	}
 
@@ -328,12 +317,12 @@ class InvoiceAnalyzerServiceTest {
         """;
 		mockChatClientChain(wrappedJson);
 		givenPersistedInvoice(1L);
-		InvoiceResponse actual = invoiceAnalyzerService.analyzeInvoice(file);
+		Invoice actual = invoiceAnalyzerService.analyzeInvoice(file);
 
 		assertExpectedInvoice(actual);
 
 		verify(callResponseSpec, times(1)).content();
-		verify(invoiceResponseValidator).validate(any(InvoiceResponse.class));
+		verify(invoiceValidator).validate(any(Invoice.class));
 		verify(invoiceRepository).save(any());
 	}
 
@@ -359,10 +348,10 @@ class InvoiceAnalyzerServiceTest {
 		mockChatClientChain(responseWithExtraText);
 		givenPersistedInvoice(1L);
 
-		InvoiceResponse actual = invoiceAnalyzerService.analyzeInvoice(file);
+		Invoice actual = invoiceAnalyzerService.analyzeInvoice(file);
 
 		assertExpectedInvoice(actual);
-		verify(invoiceResponseValidator).validate(any(InvoiceResponse.class));
+		verify(invoiceValidator).validate(any(Invoice.class));
 		verify(invoiceRepository).save(any());
 	}
 
@@ -451,19 +440,19 @@ class InvoiceAnalyzerServiceTest {
         """;
 	}
 
-	private void assertExpectedInvoice(InvoiceResponse response) {
-		assertThat(response.id()).isNotNull();
-		assertThat(response.supplier()).isEqualTo("Acme Corp");
-		assertThat(response.supplierStreet()).isEqualTo("Main Street");
-		assertThat(response.supplierStreetNumber()).isEqualTo("42A");
-		assertThat(response.supplierCity()).isEqualTo("Amsterdam");
-		assertThat(response.supplierPostalCode()).isEqualTo("1012 AB");
-		assertThat(response.invoiceNumber()).isEqualTo("INV-001");
-		assertThat(response.invoiceDate()).isEqualTo(LocalDate.of(2024, 3, 12));
-		assertThat(response.amount()).isEqualByComparingTo("99.90");
-		assertThat(response.currency()).isEqualTo("EUR");
-		assertThat(response.uploadedDate()).isNotNull();
-		assertThat(response.paymentReceivedDate()).isNull();
-		assertThat(response.updatedDate()).isNull();
+	private void assertExpectedInvoice(Invoice invoice) {
+		assertThat(invoice.getId()).isNotNull();
+		assertThat(invoice.getSupplier()).isEqualTo("Acme Corp");
+		assertThat(invoice.getSupplierStreet()).isEqualTo("Main Street");
+		assertThat(invoice.getSupplierStreetNumber()).isEqualTo("42A");
+		assertThat(invoice.getSupplierCity()).isEqualTo("Amsterdam");
+		assertThat(invoice.getSupplierPostalCode()).isEqualTo("1012 AB");
+		assertThat(invoice.getInvoiceNumber()).isEqualTo("INV-001");
+		assertThat(invoice.getInvoiceDate()).isEqualTo(LocalDate.of(2024, 3, 12));
+		assertThat(invoice.getAmount()).isEqualByComparingTo("99.90");
+		assertThat(invoice.getCurrency()).isEqualTo("EUR");
+		assertThat(invoice.getUploadedDate()).isNotNull();
+		assertThat(invoice.getPaymentReceivedDate()).isNull();
+		assertThat(invoice.getUpdatedDate()).isNull();
 	}
 }

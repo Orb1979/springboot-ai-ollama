@@ -1,7 +1,9 @@
 package com.example.ollama.controller;
 
 import com.example.ollama.dto.InvoiceResponse;
+import com.example.ollama.dto.InvoiceUpdateRequest;
 import com.example.ollama.exception.InvoiceAnalyzeException;
+import com.example.ollama.mapper.InvoiceMapper;
 import com.example.ollama.service.InvoiceAnalyzerService;
 
 import lombok.RequiredArgsConstructor;
@@ -33,7 +35,7 @@ public class InvoiceController {
 	public InvoiceResponse analyzeText(@RequestParam("file") MultipartFile file)  {
 		log.info("Analyzing invoice: {}", file.getOriginalFilename());
 		try {
-			return invoiceAnalyzeService.analyzeInvoice(file);
+			return InvoiceMapper.toResponse(invoiceAnalyzeService.analyzeInvoice(file));
 		} catch (IOException e) {
 			throw new InvoiceAnalyzeException(
 					"Failed to analyze text invoice, for file %s".formatted(file.getOriginalFilename()), e);
@@ -42,14 +44,16 @@ public class InvoiceController {
 
 	@GetMapping
 	public List<InvoiceResponse> list() {
-		return invoiceAnalyzeService.listInvoices();
+		return invoiceAnalyzeService.listInvoices().stream()
+				.map(InvoiceMapper::toResponse)
+				.toList();
 	}
 
 	@PutMapping("/{id}")
 	public InvoiceResponse update(
 			@PathVariable Long id,
-			@RequestBody InvoiceResponse invoiceResponse) {
+			@RequestBody InvoiceUpdateRequest updateRequest) {
 		log.info("Updating invoice {}", id);
-		return invoiceAnalyzeService.updateInvoice(id, invoiceResponse);
+		return InvoiceMapper.toResponse(invoiceAnalyzeService.updateInvoice(id, updateRequest));
 	}
 }

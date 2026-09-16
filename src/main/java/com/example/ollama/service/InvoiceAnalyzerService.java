@@ -1,7 +1,7 @@
 package com.example.ollama.service;
 
 import com.example.ollama.dto.InvoiceExtractionResponse;
-import com.example.ollama.dto.InvoiceResponse;
+import com.example.ollama.dto.InvoiceUpdateRequest;
 import com.example.ollama.domain.FileType;
 import com.example.ollama.entity.Invoice;
 import com.example.ollama.exception.InvoiceAnalyzeException;
@@ -25,7 +25,7 @@ public class InvoiceAnalyzerService {
 	private final ChatClient chatClient;
 	private final FileTypeDetector fileTypeDetector;
 	private final List<TextExtractor> textExtractors;
-	private final InvoiceResponseValidator invoiceResponseValidator;
+	private final InvoiceValidator invoiceValidator;
 	private final InvoiceRepository invoiceRepository;
 
 	private static final String invoicePrompt = """
@@ -62,16 +62,16 @@ public class InvoiceAnalyzerService {
 			@Qualifier("generalClient") ChatClient chatClient,
 	    FileTypeDetector fileTypeDetector,
 	    List<TextExtractor> textExtractors,
-	    InvoiceResponseValidator invoiceResponseValidator,
+	    InvoiceValidator invoiceValidator,
 	    InvoiceRepository invoiceRepository) {
 		this.chatClient = chatClient;
 		this.fileTypeDetector = fileTypeDetector;
 		this.textExtractors = textExtractors;
-		this.invoiceResponseValidator = invoiceResponseValidator;
+		this.invoiceValidator = invoiceValidator;
 		this.invoiceRepository = invoiceRepository;
 	}
 
-	public InvoiceResponse analyzeInvoice(MultipartFile file) throws IOException {
+	public Invoice analyzeInvoice(MultipartFile file) throws IOException {
 		Instant uploadedDate = Instant.now();
 		byte[] fileBytes = file.getBytes();
 		FileType fileType = fileTypeDetector.detect(fileBytes);
@@ -80,51 +80,33 @@ public class InvoiceAnalyzerService {
 		String invoiceText = textExtractor.extract(fileBytes);
 
 		InvoiceExtractionResponse extraction = analyzeInvoiceText(invoiceText, MAX_ATTEMPTS);
-		InvoiceResponse response = toResponse(extraction, uploadedDate);
-		invoiceResponseValidator.validate(response);
-		return saveInvoice(response);
+		Invoice invoice = toInvoice(extraction, uploadedDate);
+		invoiceValidator.validate(invoice);
+		return invoiceRepository.save(invoice);
 	}
 
-	public List<InvoiceResponse> listInvoices() {
-		return invoiceRepository.findAll().stream()
-				.map(this::toResponse)
-				.toList();
+	public List<Invoice> listInvoices() {
+		return invoiceRepository.findAll();
 	}
 
-	public InvoiceResponse updateInvoice(Long id, InvoiceResponse update) {
+	public Invoice updateInvoice(Long id, InvoiceUpdateRequest update) {
 		Invoice invoice = invoiceRepository.findById(id)
 				.orElseThrow(() -> new InvoiceNotFoundException(id));
 
-		InvoiceResponse candidate = new InvoiceResponse(
-				invoice.getId(),
-				update.supplier(),
-				update.supplierStreet(),
-				update.supplierStreetNumber(),
-				update.supplierCity(),
-				update.supplierPostalCode(),
-				update.invoiceNumber(),
-				update.invoiceDate(),
-				update.amount(),
-				update.currency(),
-				invoice.getUploadedDate(),
-				update.paymentReceivedDate(),
-				invoice.getUpdatedDate()
-		);
-		invoiceResponseValidator.validate(candidate);
-
-		invoice.setSupplier(candidate.supplier());
-		invoice.setSupplierStreet(candidate.supplierStreet());
-		invoice.setSupplierStreetNumber(candidate.supplierStreetNumber());
-		invoice.setSupplierCity(candidate.supplierCity());
-		invoice.setSupplierPostalCode(candidate.supplierPostalCode());
-		invoice.setInvoiceNumber(candidate.invoiceNumber());
-		invoice.setInvoiceDate(candidate.invoiceDate());
-		invoice.setAmount(candidate.amount());
-		invoice.setCurrency(candidate.currency());
-		invoice.setPaymentReceivedDate(candidate.paymentReceivedDate());
+		invoice.setSupplier(update.supplier());
+		invoice.setSupplierStreet(update.supplierStreet());
+		invoice.setSupplierStreetNumber(update.supplierStreetNumber());
+		invoice.setSupplierCity(update.supplierCity());
+		invoice.setSupplierPostalCode(update.supplierPostalCode());
+		invoice.setInvoiceNumber(update.invoiceNumber());
+		invoice.setInvoiceDate(update.invoiceDate());
+		invoice.setAmount(update.amount());
+		invoice.setCurrency(update.currency());
+		invoice.setPaymentReceivedDate(update.paymentReceivedDate());
+		invoiceValidator.validate(invoice);
 		invoice.setUpdatedDate(Instant.now());
 
-		return toResponse(invoiceRepository.save(invoice));
+		return invoiceRepository.save(invoice);
 	}
 
 	private TextExtractor findTextExtractor(FileType fileType) {
@@ -171,10 +153,8 @@ public class InvoiceAnalyzerService {
 		throw new InvoiceAnalyzeException("Model did not return valid JSON after " + retries + " attempts", lastFailure);
 	}
 
-	private InvoiceResponse toResponse(
-			InvoiceExtractionResponse extraction,
-			Instant uploadedDate) {
-		return new InvoiceResponse(
+	private Invoice toInvoice(InvoiceExtractionResponse extraction, Instant uploadedDate) {
+		return new Invoice(
 				null,
 				extraction.supplier(),
 				extraction.supplierStreet(),
@@ -191,24 +171,6 @@ public class InvoiceAnalyzerService {
 		);
 	}
 
-	private InvoiceResponse toResponse(Invoice invoice) {
-		return new InvoiceResponse(
-				invoice.getId(),
-				invoice.getSupplier(),
-				invoice.getSupplierStreet(),
-				invoice.getSupplierStreetNumber(),
-				invoice.getSupplierCity(),
-				invoice.getSupplierPostalCode(),
-				invoice.getInvoiceNumber(),
-				invoice.getInvoiceDate(),
-				invoice.getAmount(),
-				invoice.getCurrency(),
-				invoice.getUploadedDate(),
-				invoice.getPaymentReceivedDate(),
-				invoice.getUpdatedDate()
-		);
-	}
-
 	// Small local models frequently wrap their JSON in ```json ... ``` fences
 	// or add a sentence before/after it despite instructions not to.
 	// Rather than fail on that alone, take the substring between the first '{' and the last '}'
@@ -220,24 +182,5 @@ public class InvoiceAnalyzerService {
 			return trimmed.substring(firstBrace, lastBrace + 1);
 		}
 		return trimmed;
-	}
-
-	private InvoiceResponse saveInvoice(InvoiceResponse response) {
-		Invoice invoice = new Invoice(
-				null,
-				response.supplier(),
-				response.supplierStreet(),
-				response.supplierStreetNumber(),
-				response.supplierCity(),
-				response.supplierPostalCode(),
-				response.invoiceNumber(),
-				response.invoiceDate(),
-				response.amount(),
-				response.currency(),
-				response.uploadedDate(),
-				response.paymentReceivedDate(),
-				null
-		);
-		return toResponse(invoiceRepository.save(invoice));
 	}
 }
