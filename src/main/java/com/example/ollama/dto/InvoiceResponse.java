@@ -1,7 +1,5 @@
 package com.example.ollama.dto;
 
-import com.example.ollama.entity.Invoice;
-
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -19,6 +17,7 @@ public record InvoiceResponse(
 		String currency,
 		Instant uploadedDate,
 		Instant paymentReceivedDate,
-		Instant updatedDate
+		Instant updatedDate,
+		Double similarityScore
 ) {
 }

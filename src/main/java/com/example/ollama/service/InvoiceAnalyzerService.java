@@ -2,6 +2,7 @@ package com.example.ollama.service;
 
 import com.example.ollama.dto.InvoiceExtractionResponse;
 import com.example.ollama.dto.InvoiceSearchCriteria;
+import com.example.ollama.dto.InvoiceSearchHit;
 import com.example.ollama.dto.InvoiceUpdateRequest;
 import com.example.ollama.domain.FileType;
 import com.example.ollama.entity.Invoice;
@@ -101,7 +102,7 @@ public class InvoiceAnalyzerService {
 		return invoiceRepository.findAll();
 	}
 
-	public List<Invoice> searchInvoices(InvoiceSearchCriteria criteria) {
+	public List<InvoiceSearchHit> searchInvoices(InvoiceSearchCriteria criteria) {
 		return invoiceEmbeddingService.search(criteria);
 	}
 

@@ -1,6 +1,7 @@
 package com.example.ollama.service;
 
 import com.example.ollama.dto.InvoiceSearchCriteria;
+import com.example.ollama.dto.InvoiceSearchHit;
 import com.example.ollama.entity.Invoice;
 import com.example.ollama.exception.InvoiceAnalyzeException;
 import com.example.ollama.repo.InvoiceRepository;
@@ -79,15 +80,17 @@ public class InvoiceEmbeddingService {
 		}
 	}
 
-	public List<Invoice> search(InvoiceSearchCriteria criteria) {
-		List<Invoice> candidates;
+	public List<InvoiceSearchHit> search(InvoiceSearchCriteria criteria) {
+		List<InvoiceSearchHit> candidates;
 		if (criteria.hasQuery()) {
 			candidates = similaritySearch(criteria);
 		} else {
-			candidates = invoiceRepository.findAll();
+			candidates = invoiceRepository.findAll().stream()
+					.map(invoice -> new InvoiceSearchHit(invoice, null))
+					.toList();
 		}
 		return candidates.stream()
-				.filter(invoice -> matchesFilters(invoice, criteria))
+				.filter(hit -> matchesFilters(hit.invoice(), criteria))
 				.limit(criteria.limit())
 				.toList();
 	}
@@ -116,7 +119,7 @@ public class InvoiceEmbeddingService {
 		return UUID.nameUUIDFromBytes(("invoice-" + invoiceId).getBytes(StandardCharsets.UTF_8)).toString();
 	}
 
-	private List<Invoice> similaritySearch(InvoiceSearchCriteria criteria) {
+	private List<InvoiceSearchHit> similaritySearch(InvoiceSearchCriteria criteria) {
 		int fetchSize = Math.min(InvoiceSearchCriteria.MAX_LIMIT, Math.max(criteria.limit() * 3, criteria.limit()));
 		List<Document> documents = vectorStore.similaritySearch(
 				SearchRequest.builder()
@@ -135,10 +138,13 @@ public class InvoiceEmbeddingService {
 				.toList();
 
 		Map<Long, Integer> rankById = new LinkedHashMap<>();
+		Map<Long, Double> scoreById = new LinkedHashMap<>();
 		for (int i = 0; i < ranked.size(); i++) {
-			Long invoiceId = parseInvoiceId(ranked.get(i));
+			Document document = ranked.get(i);
+			Long invoiceId = parseInvoiceId(document);
 			if (invoiceId != null) {
 				rankById.putIfAbsent(invoiceId, i);
+				scoreById.putIfAbsent(invoiceId, rankingScore(document, criteria.query()));
 			}
 		}
 		if (rankById.isEmpty()) {
@@ -148,13 +154,13 @@ public class InvoiceEmbeddingService {
 		Map<Long, Invoice> byId = invoiceRepository.findAllById(rankById.keySet()).stream()
 				.collect(Collectors.toMap(Invoice::getId, invoice -> invoice));
 
-		List<Invoice> ordered = new ArrayList<>();
+		List<InvoiceSearchHit> ordered = new ArrayList<>();
 		rankById.keySet().stream()
 				.sorted(Comparator.comparingInt(rankById::get))
 				.forEach(id -> {
 					Invoice invoice = byId.get(id);
 					if (invoice != null) {
-						ordered.add(invoice);
+						ordered.add(new InvoiceSearchHit(invoice, scoreById.get(id)));
 					}
 				});
 		return ordered;

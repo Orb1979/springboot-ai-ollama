@@ -55,6 +55,15 @@ export function InvoiceDataTable({
           size: 30,
           maxSize: 60,
         }),
+        columnHelper.accessor('similarityScore', {
+          header: 'Score',
+          cell: (info) => {
+            const score = info.getValue()
+            return score == null ? '—' : score.toFixed(3)
+          },
+          size: 70,
+          maxSize: 90,
+        }),
         columnHelper.accessor('supplier', {
           header: 'Supplier',
           cell: (info) => info.getValue(),

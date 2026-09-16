@@ -34,4 +34,5 @@ export interface InvoiceResponse {
   uploadedDate: string
   paymentReceivedDate: string | null
   updatedDate: string | null
+  similarityScore: number | null
 }

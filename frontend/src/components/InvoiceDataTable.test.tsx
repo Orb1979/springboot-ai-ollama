@@ -21,6 +21,7 @@ function sampleInvoice(
     uploadedDate: '2026-09-15T11:22:22.546024Z',
     paymentReceivedDate: '2026-09-15T11:22:00Z',
     updatedDate: '2026-09-15T11:24:33.512469Z',
+    similarityScore: null,
     ...overrides,
   }
 }
@@ -46,6 +47,23 @@ describe('InvoiceDataTable', () => {
     expect(screen.getByText('Acme Supplies')).toBeInTheDocument()
     expect(screen.getByText('Beta Goods')).toBeInTheDocument()
     expect(screen.getByText('2 search results')).toBeInTheDocument()
+  })
+
+  it('renders similarity scores when present and a dash when missing', () => {
+    render(
+      <InvoiceDataTable
+        invoices={[
+          sampleInvoice({ id: 1, similarityScore: 0.812 }),
+          sampleInvoice({ id: 2, supplier: 'Beta Goods', similarityScore: null }),
+        ]}
+        onEdit={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('columnheader', { name: /Score/ })).toBeInTheDocument()
+    expect(screen.getByText('0.812')).toBeInTheDocument()
+    const rows = screen.getAllByRole('row').slice(1)
+    expect(rows[1]).toHaveTextContent('—')
   })
 
   it('sorts when a column header is clicked', async () => {
