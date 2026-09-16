@@ -80,14 +80,14 @@ public class InvoiceAnalyzerService {
 		String invoiceText = textExtractor.extract(fileBytes);
 
 		InvoiceExtractionResponse extraction = analyzeInvoiceText(invoiceText, MAX_ATTEMPTS);
-		InvoiceResponse response = toResponse(extraction, uploadedDate);
+		InvoiceResponse response = InvoiceResponse.from(extraction, uploadedDate);
 		invoiceResponseValidator.validate(response);
 		return saveInvoice(response);
 	}
 
 	public List<InvoiceResponse> listInvoices() {
 		return invoiceRepository.findAll().stream()
-				.map(this::toResponse)
+				.map(InvoiceResponse::from)
 				.toList();
 	}
 
@@ -124,7 +124,7 @@ public class InvoiceAnalyzerService {
 		invoice.setPaymentReceivedDate(candidate.paymentReceivedDate());
 		invoice.setUpdatedDate(Instant.now());
 
-		return toResponse(invoiceRepository.save(invoice));
+		return InvoiceResponse.from(invoiceRepository.save(invoice));
 	}
 
 	private TextExtractor findTextExtractor(FileType fileType) {
@@ -132,6 +132,20 @@ public class InvoiceAnalyzerService {
 				       filter(extractor -> extractor.supports(fileType))
 				       .findFirst()
 				       .orElseThrow(() -> new InvoiceAnalyzeException("No TextExtractor found for file type: " + fileType));
+	}
+
+	// simple version without retries
+	private InvoiceResponse analyzeInvoiceText(String invoiceText) {
+		InvoiceResponse invoiceResponse = chatClient
+				                                  .prompt()
+				                                  .user(invoicePrompt.formatted(invoiceText))
+				                                  .call()
+				                                  .entity(InvoiceResponse.class);
+
+		if (invoiceResponse == null) {
+			throw new InvoiceAnalyzeException("Failed to extract invoice information");
+		}
+		return saveInvoice(invoiceResponse);
 	}
 
 	// use Spring AI BeanOutputConverter getFormat() to generate the schema, instead of chatClient.entity()
@@ -171,44 +185,6 @@ public class InvoiceAnalyzerService {
 		throw new InvoiceAnalyzeException("Model did not return valid JSON after " + retries + " attempts", lastFailure);
 	}
 
-	private InvoiceResponse toResponse(
-			InvoiceExtractionResponse extraction,
-			Instant uploadedDate) {
-		return new InvoiceResponse(
-				null,
-				extraction.supplier(),
-				extraction.supplierStreet(),
-				extraction.supplierStreetNumber(),
-				extraction.supplierCity(),
-				extraction.supplierPostalCode(),
-				extraction.invoiceNumber(),
-				extraction.invoiceDate(),
-				extraction.amount(),
-				extraction.currency(),
-				uploadedDate,
-				null,
-				null
-		);
-	}
-
-	private InvoiceResponse toResponse(Invoice invoice) {
-		return new InvoiceResponse(
-				invoice.getId(),
-				invoice.getSupplier(),
-				invoice.getSupplierStreet(),
-				invoice.getSupplierStreetNumber(),
-				invoice.getSupplierCity(),
-				invoice.getSupplierPostalCode(),
-				invoice.getInvoiceNumber(),
-				invoice.getInvoiceDate(),
-				invoice.getAmount(),
-				invoice.getCurrency(),
-				invoice.getUploadedDate(),
-				invoice.getPaymentReceivedDate(),
-				invoice.getUpdatedDate()
-		);
-	}
-
 	// Small local models frequently wrap their JSON in ```json ... ``` fences
 	// or add a sentence before/after it despite instructions not to.
 	// Rather than fail on that alone, take the substring between the first '{' and the last '}'
@@ -238,6 +214,6 @@ public class InvoiceAnalyzerService {
 				response.paymentReceivedDate(),
 				null
 		);
-		return toResponse(invoiceRepository.save(invoice));
+		return InvoiceResponse.from(invoiceRepository.save(invoice));
 	}
 }
