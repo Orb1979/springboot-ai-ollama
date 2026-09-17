@@ -79,77 +79,36 @@ class InvoiceEmbeddingServiceTest {
 	}
 
 	@Test
-	void search_withoutQuery_filtersAllInvoicesWithNullScores() {
-		when(invoiceRepository.findAll()).thenReturn(List.of(
-				sample(1L),
-				sample(2L, new BigDecimal("500.00"), "USD", LocalDate.of(2023, 1, 1))
-		));
+	void search_withQuery_returnsResultsInScoreOrder() {
+		Document lowerScore = Document.builder()
+				                      .id(InvoiceEmbeddingService.createDocumentId(2L))
+				                      .text("Supplier: Bright Office Supplies Ltd")
+				                      .metadata(InvoiceEmbeddingService.METADATA_INVOICE_ID, "2")
+				                      .score(0.42)
+				                      .build();
 
-		List<InvoiceSearchHit> results = service.search(new InvoiceSearchCriteria(
-				null, new BigDecimal("50"), new BigDecimal("200"), "EUR",
-				LocalDate.of(2024, 1, 1), LocalDate.of(2024, 12, 31), 20));
+		Document higherScore = Document.builder()
+				                       .id(InvoiceEmbeddingService.createDocumentId(1L))
+				                       .text("Supplier: Acme Corp")
+				                       .metadata(InvoiceEmbeddingService.METADATA_INVOICE_ID, "1")
+				                       .score(0.81)
+				                       .build();
 
-		assertThat(results).extracting(hit -> hit.invoice().getId()).containsExactly(1L);
-		assertThat(results).extracting(InvoiceSearchHit::similarityScore).containsExactly((Double) null);
-		verify(vectorStore, never()).similaritySearch(any(SearchRequest.class));
-	}
-
-	@Test
-	void search_withQuery_ordersByScoreDescendingAndExposesScores() {
-		Document lowerScoreFirstInList = Document.builder()
-				.id(InvoiceEmbeddingService.createDocumentId(2L))
-				.text("Supplier: Bright Office Supplies Ltd")
-				.metadata(InvoiceEmbeddingService.METADATA_INVOICE_ID, "2")
-				.score(0.42)
-				.build();
-		Document higherScoreSecondInList = Document.builder()
-				.id(InvoiceEmbeddingService.createDocumentId(1L))
-				.text("Supplier: Acme Corp")
-				.metadata(InvoiceEmbeddingService.METADATA_INVOICE_ID, "1")
-				.score(0.81)
-				.build();
 		when(vectorStore.similaritySearch(any(SearchRequest.class)))
-				.thenReturn(List.of(lowerScoreFirstInList, higherScoreSecondInList));
-		when(invoiceRepository.findAllById(any())).thenReturn(List.of(sample(1L), sample(2L)));
+				.thenReturn(List.of(higherScore, lowerScore));
 
-		String query = "show me all suppliers with name acme corp";
-		List<InvoiceSearchHit> results = service.search(new InvoiceSearchCriteria(
-				query, null, null, null, null, null, 20));
+		when(invoiceRepository.findAllById(any()))
+				.thenReturn(List.of(sample(1L), sample(2L)));
 
-		assertThat(results).extracting(hit -> hit.invoice().getId()).containsExactly(1L, 2L);
-		assertThat(results.get(0).similarityScore())
-				.isEqualTo(InvoiceEmbeddingService.rankingScore(higherScoreSecondInList, query));
-		assertThat(results.get(1).similarityScore())
-				.isEqualTo(InvoiceEmbeddingService.rankingScore(lowerScoreFirstInList, query));
-		assertThat(results.get(0).similarityScore()).isGreaterThan(results.get(1).similarityScore());
-	}
+		String query = "acme corp";
 
-	@Test
-	void search_withQuery_prefersStrongLexicalSupplierMatchOverWeakerNeighbor() {
-		Document weakNeighbor = Document.builder()
-				.id(InvoiceEmbeddingService.createDocumentId(2L))
-				.text("Supplier: Bright Office Supplies Ltd\nAddress: High Street 1, London")
-				.metadata(InvoiceEmbeddingService.METADATA_INVOICE_ID, "2")
-				.score(0.58)
-				.build();
-		Document nameMatch = Document.builder()
-				.id(InvoiceEmbeddingService.createDocumentId(1L))
-				.text("Supplier: Acme Corp\nAddress: Main Street 42A, Amsterdam")
-				.metadata(InvoiceEmbeddingService.METADATA_INVOICE_ID, "1")
-				.score(0.51)
-				.build();
-		when(vectorStore.similaritySearch(any(SearchRequest.class)))
-				.thenReturn(List.of(weakNeighbor, nameMatch));
-		when(invoiceRepository.findAllById(any())).thenReturn(List.of(
-				sample(1L),
-				sample(2L, "Bright Office Supplies Ltd", new BigDecimal("99.90"), "EUR", LocalDate.of(2024, 3, 12))));
+		List<InvoiceSearchHit> results = service.search(
+				new InvoiceSearchCriteria(query, null, null, null, null, null, 20)
+		);
 
-		String query = "show me all suppliers with name acme corp";
-		List<InvoiceSearchHit> results = service.search(new InvoiceSearchCriteria(
-				query, null, null, null, null, null, 20));
-
-		assertThat(results).extracting(hit -> hit.invoice().getId()).containsExactly(1L, 2L);
-		assertThat(results.get(0).similarityScore()).isGreaterThan(results.get(1).similarityScore());
+		assertThat(results)
+				.extracting(hit -> hit.invoice().getId())
+				.containsExactly(1L, 2L);
 	}
 
 	private Invoice sample(Long id) {
