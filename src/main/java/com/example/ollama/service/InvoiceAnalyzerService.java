@@ -7,6 +7,7 @@ import com.example.ollama.dto.InvoiceUpdateRequest;
 import com.example.ollama.domain.FileType;
 import com.example.ollama.entity.Invoice;
 import com.example.ollama.exception.InvoiceAnalyzeException;
+import com.example.ollama.exception.InvoiceEmbedException;
 import com.example.ollama.exception.InvoiceNotFoundException;
 import com.example.ollama.repo.InvoiceRepository;
 import com.example.ollama.service.extractors.TextExtractor;
@@ -93,7 +94,7 @@ public class InvoiceAnalyzerService {
 		} catch (RuntimeException ex) {
 			invoiceRepository.deleteById(saved.getId());
 			invoiceEmbeddingService.removeInvoice(saved.getId());
-			throw ex;
+			throw new InvoiceEmbedException("Failed to index invoice", ex);
 		}
 		return saved;
 	}
