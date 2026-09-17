@@ -59,10 +59,10 @@ class InvoiceEmbeddingServiceTest {
 		service.indexInvoice(invoice);
 
 		ArgumentCaptor<List<Document>> docs = ArgumentCaptor.captor();
-		verify(vectorStore).delete(List.of(InvoiceEmbeddingService.documentIdFor(42L)));
+		verify(vectorStore).delete(List.of(InvoiceEmbeddingService.createDocumentId(42L)));
 		verify(vectorStore).add(docs.capture());
 		Document document = docs.getValue().getFirst();
-		assertThat(document.getId()).isEqualTo(InvoiceEmbeddingService.documentIdFor(42L));
+		assertThat(document.getId()).isEqualTo(InvoiceEmbeddingService.createDocumentId(42L));
 		assertThat(document.getText()).contains("Acme Corp");
 		assertThat(document.getMetadata().get(InvoiceEmbeddingService.METADATA_INVOICE_ID))
 				.isEqualTo("42");
@@ -97,13 +97,13 @@ class InvoiceEmbeddingServiceTest {
 	@Test
 	void search_withQuery_ordersByScoreDescendingAndExposesScores() {
 		Document lowerScoreFirstInList = Document.builder()
-				.id(InvoiceEmbeddingService.documentIdFor(2L))
+				.id(InvoiceEmbeddingService.createDocumentId(2L))
 				.text("Supplier: Bright Office Supplies Ltd")
 				.metadata(InvoiceEmbeddingService.METADATA_INVOICE_ID, "2")
 				.score(0.42)
 				.build();
 		Document higherScoreSecondInList = Document.builder()
-				.id(InvoiceEmbeddingService.documentIdFor(1L))
+				.id(InvoiceEmbeddingService.createDocumentId(1L))
 				.text("Supplier: Acme Corp")
 				.metadata(InvoiceEmbeddingService.METADATA_INVOICE_ID, "1")
 				.score(0.81)
@@ -127,13 +127,13 @@ class InvoiceEmbeddingServiceTest {
 	@Test
 	void search_withQuery_prefersStrongLexicalSupplierMatchOverWeakerNeighbor() {
 		Document weakNeighbor = Document.builder()
-				.id(InvoiceEmbeddingService.documentIdFor(2L))
+				.id(InvoiceEmbeddingService.createDocumentId(2L))
 				.text("Supplier: Bright Office Supplies Ltd\nAddress: High Street 1, London")
 				.metadata(InvoiceEmbeddingService.METADATA_INVOICE_ID, "2")
 				.score(0.58)
 				.build();
 		Document nameMatch = Document.builder()
-				.id(InvoiceEmbeddingService.documentIdFor(1L))
+				.id(InvoiceEmbeddingService.createDocumentId(1L))
 				.text("Supplier: Acme Corp\nAddress: Main Street 42A, Amsterdam")
 				.metadata(InvoiceEmbeddingService.METADATA_INVOICE_ID, "1")
 				.score(0.51)

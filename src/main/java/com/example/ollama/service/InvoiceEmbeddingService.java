@@ -55,7 +55,7 @@ public class InvoiceEmbeddingService {
 	}
 
 	public void indexInvoice(Invoice invoice) {
-		String documentId = documentIdFor(invoice.getId());
+		String documentId = createDocumentId(invoice.getId());
 		Document document = new Document(
 				documentId,
 				toSummary(invoice),
@@ -72,7 +72,7 @@ public class InvoiceEmbeddingService {
 
 	public void removeInvoice(Long invoiceId) {
 		try {
-			vectorStore.delete(List.of(documentIdFor(invoiceId)));
+			vectorStore.delete(List.of(createDocumentId(invoiceId)));
 		} catch (RuntimeException ex) {
 			log.warn("Failed to remove invoice {} from vector store: {}", invoiceId, ex.getMessage());
 		}
@@ -114,7 +114,10 @@ public class InvoiceEmbeddingService {
 		).trim();
 	}
 
-	static String documentIdFor(Long invoiceId) {
+	static String createDocumentId(Long invoiceId) {
+		if (invoiceId == null) {
+			throw new InvoiceEmbedException("invoiceId is null");
+		}
 		return UUID.nameUUIDFromBytes(("invoice-" + invoiceId).getBytes(StandardCharsets.UTF_8)).toString();
 	}
 
