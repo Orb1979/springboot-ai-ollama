@@ -78,24 +78,15 @@ class InvoiceAnalyzerServiceTest {
 
 		assertExpectedInvoice(actual);
 		assertThat(actual.getId()).isEqualTo(42L);
-		verifyAnalyzePersisted();
-		verify(invoiceEmbeddingService).indexInvoice(any(Invoice.class));
-	}
-
-	@Test
-	void analyzeInvoice_mapsExtractedAndServerFieldsToSavedInvoice() throws Exception {
-		MockMultipartFile file = givenReadyToAnalyze(7L);
-
-		Invoice invoice = invoiceAnalyzerService.analyzeInvoice(file);
-
-		assertExpectedInvoice(invoice);
-		assertThat(invoice.getId()).isEqualTo(7L);
 
 		ArgumentCaptor<Invoice> invoiceCaptor = ArgumentCaptor.forClass(Invoice.class);
+		verify(invoiceValidator).validate(any(Invoice.class));
 		verify(invoiceRepository).save(invoiceCaptor.capture());
+		verify(invoiceEmbeddingService).indexInvoice(any(Invoice.class));
+
 		Invoice savedInvoice = invoiceCaptor.getValue();
 		assertExpectedInvoice(savedInvoice);
-		assertThat(savedInvoice.getUploadedDate()).isEqualTo(invoice.getUploadedDate());
+		assertThat(savedInvoice.getUploadedDate()).isEqualTo(actual.getUploadedDate());
 	}
 
 	@Test
