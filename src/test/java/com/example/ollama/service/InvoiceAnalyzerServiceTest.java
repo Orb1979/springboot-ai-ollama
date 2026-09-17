@@ -4,6 +4,7 @@ import com.example.ollama.domain.FileType;
 import com.example.ollama.dto.InvoiceUpdateRequest;
 import com.example.ollama.entity.Invoice;
 import com.example.ollama.exception.InvoiceAnalyzeException;
+import com.example.ollama.exception.InvoiceEmbedException;
 import com.example.ollama.exception.InvoiceNotFoundException;
 import com.example.ollama.repo.InvoiceRepository;
 import com.example.ollama.service.extractors.TextExtractor;
@@ -27,10 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class InvoiceAnalyzerServiceTest {
@@ -129,8 +127,9 @@ class InvoiceAnalyzerServiceTest {
 				"Updated Corp",
 				"New Street",
 				"99",
-				"Utrecht",
 				"3500 AA",
+				"Utrecht",
+				"Netherlands",
 				"INV-009",
 				LocalDate.of(2024, 4, 1),
 				new BigDecimal("150.00"),
@@ -154,12 +153,12 @@ class InvoiceAnalyzerServiceTest {
 		givenValidFile();
 		mockChatClientChain(validInvoiceJson());
 		givenPersistedInvoice(55L);
-		org.mockito.Mockito.doThrow(new InvoiceAnalyzeException("vector store down"))
+
+		doThrow(new InvoiceEmbedException("vector store down"))
 				.when(invoiceEmbeddingService).indexInvoice(any(Invoice.class));
 
 		assertThatThrownBy(() -> invoiceAnalyzerService.analyzeInvoice(createTextFile()))
-				.isInstanceOf(InvoiceAnalyzeException.class)
-				.hasMessageContaining("vector store down");
+				.isInstanceOf(InvoiceEmbedException.class);
 
 		verify(invoiceRepository).deleteById(55L);
 		verify(invoiceEmbeddingService).removeInvoice(55L);
@@ -172,8 +171,7 @@ class InvoiceAnalyzerServiceTest {
 		assertThatThrownBy(() -> invoiceAnalyzerService.updateInvoice(
 				404L,
 				new InvoiceUpdateRequest(
-						"A", "B", "1", "C", "D", "E",
-						LocalDate.of(2024, 1, 1), new BigDecimal("1.00"), "EUR", null)))
+						"A", "B", "C", "D", "E", "F", "G", LocalDate.of(2024, 1, 1), new BigDecimal("1.00"), "EUR", null)))
 				.isInstanceOf(InvoiceNotFoundException.class)
 				.hasMessageContaining("404");
 		verify(invoiceRepository, never()).save(any());
@@ -328,6 +326,7 @@ class InvoiceAnalyzerServiceTest {
           "supplierStreetNumber": "42A",
           "supplierCity": "Amsterdam",
           "supplierPostalCode": "1012 AB",
+          "supplierCountry": "Netherlands",
           "invoiceNumber": "INV-001",
           "invoiceDate": "2024-03-12",
           "amount": 99.90,
@@ -358,6 +357,7 @@ class InvoiceAnalyzerServiceTest {
           "supplierStreetNumber": "42A",
           "supplierCity": "Amsterdam",
           "supplierPostalCode": "1012 AB",
+          "supplierCountry": "Netherlands",
           "invoiceNumber": "INV-001",
           "invoiceDate": "2024-03-12",
           "amount": 99.90,
@@ -405,8 +405,9 @@ class InvoiceAnalyzerServiceTest {
 				"Acme Corp",
 				"Main Street",
 				"42A",
-				"Amsterdam",
 				"1012 AB",
+				"Amsterdam",
+				"Netherlands",
 				"INV-001",
 				LocalDate.of(2024, 3, 12),
 				new BigDecimal("99.90"),
@@ -450,8 +451,9 @@ class InvoiceAnalyzerServiceTest {
           "supplier": "Acme Corp",
           "supplierStreet": "Main Street",
           "supplierStreetNumber": "42A",
-          "supplierCity": "Amsterdam",
           "supplierPostalCode": "1012 AB",
+          "supplierCity": "Amsterdam",
+          "supplierCountry": "Netherlands",
           "invoiceNumber": "INV-001",
           "invoiceDate": "2024-03-12",
           "amount": 99.90,
@@ -465,8 +467,9 @@ class InvoiceAnalyzerServiceTest {
 		assertThat(invoice.getSupplier()).isEqualTo("Acme Corp");
 		assertThat(invoice.getSupplierStreet()).isEqualTo("Main Street");
 		assertThat(invoice.getSupplierStreetNumber()).isEqualTo("42A");
-		assertThat(invoice.getSupplierCity()).isEqualTo("Amsterdam");
 		assertThat(invoice.getSupplierPostalCode()).isEqualTo("1012 AB");
+		assertThat(invoice.getSupplierCity()).isEqualTo("Amsterdam");
+		assertThat(invoice.getSupplierCountry()).isEqualTo("Netherlands");
 		assertThat(invoice.getInvoiceNumber()).isEqualTo("INV-001");
 		assertThat(invoice.getInvoiceDate()).isEqualTo(LocalDate.of(2024, 3, 12));
 		assertThat(invoice.getAmount()).isEqualByComparingTo("99.90");

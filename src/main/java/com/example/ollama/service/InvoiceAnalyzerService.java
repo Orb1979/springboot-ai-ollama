@@ -38,8 +38,10 @@ public class InvoiceAnalyzerService {
 			- supplier: the company or person issuing the invoice
 			- supplierStreet: the supplier street name without the house or building number
 			- supplierStreetNumber: the supplier house or building number, including any suffix
-			- supplierCity: the supplier city
 			- supplierPostalCode: the supplier postal or ZIP code
+			- supplierCity: the supplier city
+			- supplierCountry: the supplier country, if there is no supplier country in the invoice, try to infer the country
+			  from the supplierCity, supplierPostalCode or state reference
 			- invoiceNumber: the unique invoice identifier
 			- invoiceDate: the invoice issue date in ISO-8601 format (YYYY-MM-DD)
 			- amount: the final total amount that the customer must pay
@@ -194,8 +196,9 @@ public class InvoiceAnalyzerService {
 				extraction.supplier(),
 				extraction.supplierStreet(),
 				extraction.supplierStreetNumber(),
-				extraction.supplierCity(),
 				extraction.supplierPostalCode(),
+				extraction.supplierCity(),
+				extraction.supplierCountry(),
 				extraction.invoiceNumber(),
 				extraction.invoiceDate(),
 				extraction.amount(),

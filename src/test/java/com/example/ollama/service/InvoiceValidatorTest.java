@@ -94,18 +94,19 @@ class InvoiceValidatorTest {
 	@Test
 	void missingRequiredInvoiceDetails_collectsExpectedErrors() {
 		Invoice invoice = new Invoice(
-				1L, "Acme Corp", null, "   ", null, null,
+				1L, "Acme Corp", null, "   ", null, null, null,
 				"INV-001", null, new BigDecimal("100.00"), "EUR", null, null, null);
 
 		assertThatThrownBy(() -> validator.validate(invoice))
 				.isInstanceOf(InvoiceValidationException.class)
 				.satisfies(ex -> assertThat(((InvoiceValidationException) ex).getErrors())
-						                 .hasSize(6)
+						                 .hasSize(7)
 						                 .containsExactlyInAnyOrder(
 								                 "supplier street is missing",
 								                 "supplier street number is missing",
-								                 "supplier city is missing",
 								                 "supplier postal code is missing",
+								                 "supplier city is missing",
+								                 "supplier country is missing",
 								                 "invoice date is missing",
 								                 "uploaded date is missing"));
 	}
@@ -113,18 +114,19 @@ class InvoiceValidatorTest {
 	@Test
 	void allFieldsMissing_collectsAllRequiredErrors() {
 		Invoice invoice = new Invoice(
-				null, null, null, null, null, null, null, null, null, null, null, null, null);
+				null, null, null, null, null, null, null,  null, null, null, null, null, null, null);
 
 		assertThatThrownBy(() -> validator.validate(invoice))
 				.isInstanceOf(InvoiceValidationException.class)
 				.satisfies(ex -> assertThat(((InvoiceValidationException) ex).getErrors())
-						                 .hasSize(10)
+						                 .hasSize(11)
 						                 .contains(
 								                 "supplier is missing",
 								                 "supplier street is missing",
 								                 "supplier street number is missing",
-								                 "supplier city is missing",
 								                 "supplier postal code is missing",
+								                 "supplier city is missing",
+								                 "supplier country is missing",
 								                 "invoice number is missing",
 								                 "invoice date is missing",
 								                 "amount is missing",
@@ -146,8 +148,9 @@ class InvoiceValidatorTest {
 				supplier,
 				"Main Street",
 				"42A",
-				"Amsterdam",
 				"1012 AB",
+				"Amsterdam",
+				"Netherlands",
 				invoiceNumber,
 				LocalDate.of(2024, 3, 12),
 				amount,

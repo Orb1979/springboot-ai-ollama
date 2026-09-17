@@ -34,12 +34,16 @@ public class InvoiceValidator {
 			errors.add("supplier street number is missing");
 		}
 
+		if (isBlank(invoice.getSupplierPostalCode())) {
+			errors.add("supplier postal code is missing");
+		}
+
 		if (isBlank(invoice.getSupplierCity())) {
 			errors.add("supplier city is missing");
 		}
 
-		if (isBlank(invoice.getSupplierPostalCode())) {
-			errors.add("supplier postal code is missing");
+		if (isBlank(invoice.getSupplierCountry())) {
+			errors.add("supplier country is missing");
 		}
 
 		if (isBlank(invoice.getInvoiceNumber())) {

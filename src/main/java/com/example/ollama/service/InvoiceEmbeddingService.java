@@ -97,17 +97,18 @@ public class InvoiceEmbeddingService {
 
 	static String toSummary(Invoice invoice) {
 		return """
-				Supplier: %s
-				Address: %s %s, %s %s
-				Invoice number: %s
-				Invoice date: %s
-				Amount: %s %s
-				""".formatted(
+            Supplier: %s
+            Address: %s %s, %s %s, %s
+            Invoice number: %s
+            Invoice date: %s
+            Amount: %s %s
+            """.formatted(
 				nullToEmpty(invoice.getSupplier()),
 				nullToEmpty(invoice.getSupplierStreet()),
 				nullToEmpty(invoice.getSupplierStreetNumber()),
 				nullToEmpty(invoice.getSupplierPostalCode()),
 				nullToEmpty(invoice.getSupplierCity()),
+				nullToEmpty(invoice.getSupplierCountry()),
 				nullToEmpty(invoice.getInvoiceNumber()),
 				invoice.getInvoiceDate() == null ? "" : invoice.getInvoiceDate(),
 				invoice.getAmount() == null ? "" : invoice.getAmount().toPlainString(),

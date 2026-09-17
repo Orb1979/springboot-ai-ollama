@@ -44,17 +44,18 @@ class InvoiceAnalyzerServiceIT {
 
 	@ParameterizedTest
 	@CsvSource({
-			// filename, expected supplier, street, number, city, postal code, invoice number, invoice date, amount, currency
-			"simple-invoice.txt, Acme, Industrial Way, 123, Springfield, 62704, INV-001, 2024-03-12, 99.90, EUR",
-			"dutch-invoice.txt, Jansen, Fabrieksstraat, 22, Drachten, 9203 AB, FACT-2024-0088, 2024-05-14, 249.00, EUR"
+			// filename, supplier, street, number, city, postal code, invoice number, invoice date, amount, currency
+			"simple-invoice.txt, Acme, Industrial Way, 123, 62704, Springfield, United States, INV-001, 2024-03-12, 99.90, EUR",
+			"dutch-invoice.txt, Jansen, Fabrieksstraat, 22, 9203 AB, Drachten, Netherlands, FACT-2024-0088, 2024-05-14, 249.00, EUR"
 	})
 	void analyzeInvoice_realModel(
 			String fileName,
 			String expectedSupplierContains,
 			String expectedStreetContains,
 			String expectedStreetNumber,
-			String expectedCity,
 			String expectedPostalCode,
+			String expectedCity,
+			String expectedCountry,
 			String expectedInvoiceNumber,
 			LocalDate expectedInvoiceDate,
 			String expectedAmount,
@@ -68,8 +69,9 @@ class InvoiceAnalyzerServiceIT {
 		assertThat(invoice.getSupplier()).containsIgnoringCase(expectedSupplierContains);
 		assertThat(invoice.getSupplierStreet()).isEqualToIgnoringCase(expectedStreetContains);
 		assertThat(invoice.getSupplierStreetNumber()).isEqualToIgnoringCase(expectedStreetNumber);
-		assertThat(invoice.getSupplierCity()).isEqualToIgnoringCase(expectedCity);
 		assertThat(invoice.getSupplierPostalCode()).isEqualToIgnoringCase(expectedPostalCode);
+		assertThat(invoice.getSupplierCity()).isEqualToIgnoringCase(expectedCity);
+		assertThat(invoice.getSupplierCountry()).isEqualToIgnoringCase(expectedCountry);
 		assertThat(invoice.getInvoiceNumber()).isEqualToIgnoringCase(expectedInvoiceNumber);
 		assertThat(invoice.getInvoiceDate()).isEqualTo(expectedInvoiceDate);
 		assertThat(invoice.getAmount()).isEqualByComparingTo(new BigDecimal(expectedAmount));

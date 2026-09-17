@@ -183,6 +183,7 @@ class InvoiceEmbeddingServiceTest {
 				"Main Street",
 				"42A",
 				"Amsterdam",
+				"Netherlands",
 				"1012 AB",
 				"INV-001",
 				invoiceDate,

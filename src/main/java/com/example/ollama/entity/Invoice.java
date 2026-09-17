@@ -28,11 +28,14 @@ public class Invoice {
 	@Column(name = "supplier_street_number", nullable = false, length = 50)
 	private String supplierStreetNumber;
 
+	@Column(name = "supplier_postal_code", nullable = false, length = 50)
+	private String supplierPostalCode;
+
 	@Column(name = "supplier_city", nullable = false)
 	private String supplierCity;
 
-	@Column(name = "supplier_postal_code", nullable = false, length = 50)
-	private String supplierPostalCode;
+	@Column(name = "supplier_country", nullable = false)
+	private String supplierCountry;
 
 	@Column(nullable = false)
 	private String invoiceNumber;
