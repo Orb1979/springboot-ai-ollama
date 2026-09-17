@@ -4,6 +4,7 @@ import com.example.ollama.dto.InvoiceSearchCriteria;
 import com.example.ollama.dto.InvoiceSearchHit;
 import com.example.ollama.entity.Invoice;
 import com.example.ollama.exception.InvoiceAnalyzeException;
+import com.example.ollama.exception.InvoiceEmbedException;
 import com.example.ollama.repo.InvoiceRepository;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.ai.document.Document;
@@ -22,7 +23,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
 public class InvoiceEmbeddingService {
 
 	static final String METADATA_INVOICE_ID = "invoiceId";
-	static final double DEFAULT_SIMILARITY_THRESHOLD = 0.5;
 	/** How strongly query-token overlap can boost vector similarity when ranking. */
 	static final double LEXICAL_BOOST_WEIGHT = 0.35;
 
@@ -48,7 +47,7 @@ public class InvoiceEmbeddingService {
 	public InvoiceEmbeddingService(
 			VectorStore vectorStore,
 			InvoiceRepository invoiceRepository,
-			@Value("${app.ai.search.similarity-threshold:" + DEFAULT_SIMILARITY_THRESHOLD + "}")
+			@Value("${app.ai.search.similarity-threshold}")
 			double similarityThreshold) {
 		this.vectorStore = vectorStore;
 		this.invoiceRepository = invoiceRepository;
@@ -56,7 +55,6 @@ public class InvoiceEmbeddingService {
 	}
 
 	public void indexInvoice(Invoice invoice) {
-		Objects.requireNonNull(invoice.getId(), "invoice id is required for indexing");
 		String documentId = documentIdFor(invoice.getId());
 		Document document = new Document(
 				documentId,

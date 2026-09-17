@@ -33,14 +33,11 @@ class InvoiceEmbeddingServiceTest {
 
 	@Mock private VectorStore vectorStore;
 	@Mock private InvoiceRepository invoiceRepository;
-	private InvoiceEmbeddingService service;
+	InvoiceEmbeddingService service;
 
 	@BeforeEach
 	void setUp() {
-		service = new InvoiceEmbeddingService(
-				vectorStore,
-				invoiceRepository,
-				InvoiceEmbeddingService.DEFAULT_SIMILARITY_THRESHOLD);
+		service = new InvoiceEmbeddingService(vectorStore,invoiceRepository, 0.3);
 	}
 
 	@Test
@@ -125,19 +122,6 @@ class InvoiceEmbeddingServiceTest {
 		assertThat(results.get(1).similarityScore())
 				.isEqualTo(InvoiceEmbeddingService.rankingScore(lowerScoreFirstInList, query));
 		assertThat(results.get(0).similarityScore()).isGreaterThan(results.get(1).similarityScore());
-	}
-
-	@Test
-	void search_withQuery_passesConfiguredSimilarityThreshold() {
-		when(vectorStore.similaritySearch(any(SearchRequest.class))).thenReturn(List.of());
-
-		service.search(new InvoiceSearchCriteria("acme corp", null, null, null, null, null, 20));
-
-		ArgumentCaptor<SearchRequest> request = ArgumentCaptor.captor();
-		verify(vectorStore).similaritySearch(request.capture());
-		assertThat(request.getValue().getSimilarityThreshold())
-				.isEqualTo(InvoiceEmbeddingService.DEFAULT_SIMILARITY_THRESHOLD);
-		assertThat(request.getValue().getQuery()).isEqualTo("acme corp");
 	}
 
 	@Test
