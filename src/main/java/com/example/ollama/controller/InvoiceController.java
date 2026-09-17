@@ -31,7 +31,7 @@ public class InvoiceController {
 	private final InvoiceAnalyzerService invoiceAnalyzeService;
 
 	@PostMapping("/analyze")
-	public InvoiceResponse analyzeText(@RequestParam("file") MultipartFile file)  {
+	public InvoiceResponse analyzeInvoice(@RequestParam("file") MultipartFile file)  {
 		try {
 			return InvoiceMapper.toResponse(invoiceAnalyzeService.analyzeInvoice(file));
 		} catch (IOException e) {
