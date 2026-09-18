@@ -65,12 +65,14 @@ public class InvoiceEmbeddingService {
 	}
 
 	public List<InvoiceSearchHit> search(InvoiceSearchCriteria criteria) {
+		// if no search params, just return a normal find all query
 		if (!criteria.hasQuery()) {
 			return invoiceRepository.findAll()
 					       .stream()
 					       .map(invoice -> new InvoiceSearchHit(invoice, null))
 					       .toList();
 		}
+		// similarity search (embed the user’s query, find nearest stored vectors):
 		return similaritySearch(criteria);
 	}
 
