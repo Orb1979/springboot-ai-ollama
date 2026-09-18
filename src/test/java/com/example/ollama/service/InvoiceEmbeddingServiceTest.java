@@ -97,18 +97,101 @@ class InvoiceEmbeddingServiceTest {
 		when(vectorStore.similaritySearch(any(SearchRequest.class)))
 				.thenReturn(List.of(higherScore, lowerScore));
 
-		when(invoiceRepository.findAllById(any()))
+		when(invoiceRepository.findMatchingByIds(any(), any()))
 				.thenReturn(List.of(sample(1L), sample(2L)));
 
 		String query = "acme corp";
 
 		List<InvoiceSearchHit> results = service.search(
-				new InvoiceSearchCriteria(query, null, null, null, null, null, 20)
+				new InvoiceSearchCriteria(query, null, null, null, null, null, null, null, 25)
 		);
 
 		assertThat(results)
 				.extracting(hit -> hit.invoice().getId())
 				.containsExactly(1L, 2L);
+	}
+
+	@Test
+	void search_withoutQuery_usesFindMatchingWithLimit() {
+		Invoice invoice = sample(1L);
+		var criteria = new InvoiceSearchCriteria(null, null, null, null, null, null, null, null, 25);
+
+		when(invoiceRepository.findMatching(criteria)).thenReturn(List.of(invoice));
+
+		List<InvoiceSearchHit> results = service.search(criteria);
+
+		assertThat(results).hasSize(1);
+		verify(invoiceRepository).findMatching(criteria);
+		verify(invoiceRepository, never()).findAll();
+		verify(vectorStore, never()).similaritySearch(any(SearchRequest.class));
+	}
+
+	@Test
+	void search_withFiltersOnly_usesSqlFiltersAndSkipsVectorStore() {
+		Invoice eur = sample(1L, new BigDecimal("150.00"), "EUR", LocalDate.of(2024, 6, 1));
+		var criteria = new InvoiceSearchCriteria(
+				null,
+				new BigDecimal("100"),
+				null,
+				"EUR",
+				LocalDate.of(2024, 1, 1),
+				LocalDate.of(2024, 12, 31),
+				null,
+				null,
+				25
+		);
+
+		when(invoiceRepository.findMatching(criteria)).thenReturn(List.of(eur));
+
+		List<InvoiceSearchHit> results = service.search(criteria);
+
+		assertThat(results)
+				.extracting(hit -> hit.invoice().getId())
+				.containsExactly(1L);
+		assertThat(results.getFirst().similarityScore()).isNull();
+		verify(vectorStore, never()).similaritySearch(any(SearchRequest.class));
+		verify(invoiceRepository, never()).findAll();
+	}
+
+	@Test
+	void search_withQueryAndFilters_keepsScoreOrderButDropsNonMatching() {
+		Document first = Document.builder()
+				.id(InvoiceEmbeddingService.createDocumentId(1L))
+				.text("Supplier: Acme Corp")
+				.metadata(InvoiceEmbeddingService.METADATA_INVOICE_ID, "1")
+				.score(0.9)
+				.build();
+		Document second = Document.builder()
+				.id(InvoiceEmbeddingService.createDocumentId(2L))
+				.text("Supplier: Bright Office Supplies Ltd")
+				.metadata(InvoiceEmbeddingService.METADATA_INVOICE_ID, "2")
+				.score(0.8)
+				.build();
+
+		when(vectorStore.similaritySearch(any(SearchRequest.class)))
+				.thenReturn(List.of(first, second));
+
+		Invoice matching = sample(1L, new BigDecimal("150.00"), "EUR", LocalDate.of(2024, 6, 1));
+		var criteria = new InvoiceSearchCriteria(
+				"office supplies",
+				new BigDecimal("100"),
+				null,
+				"EUR",
+				null,
+				null,
+				null,
+				null,
+				25
+		);
+
+		when(invoiceRepository.findMatchingByIds(List.of(1L, 2L), criteria))
+				.thenReturn(List.of(matching));
+
+		List<InvoiceSearchHit> results = service.search(criteria);
+
+		assertThat(results).hasSize(1);
+		assertThat(results.getFirst().invoice().getId()).isEqualTo(1L);
+		assertThat(results.getFirst().similarityScore()).isEqualTo(0.9);
 	}
 
 	private Invoice sample(Long id) {

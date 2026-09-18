@@ -1,17 +1,15 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { listInvoices, searchInvoices, updateInvoice } from '../api/client'
+import { searchInvoices, updateInvoice } from '../api/client'
 import type { InvoiceResponse } from '../api/types'
 import { InvoiceList } from './InvoiceList'
 
 vi.mock('../api/client', () => ({
-  listInvoices: vi.fn(),
   searchInvoices: vi.fn(),
   updateInvoice: vi.fn(),
 }))
 
-const listInvoicesMock = vi.mocked(listInvoices)
 const searchInvoicesMock = vi.mocked(searchInvoices)
 const updateInvoiceMock = vi.mocked(updateInvoice)
 
@@ -40,13 +38,12 @@ function sampleInvoice(
 
 describe('InvoiceList', () => {
   beforeEach(() => {
-    listInvoicesMock.mockReset()
     searchInvoicesMock.mockReset()
     updateInvoiceMock.mockReset()
   })
 
-  it('loads invoices when active and returns to the list after a successful save', async () => {
-    listInvoicesMock.mockResolvedValue([sampleInvoice()])
+  it('loads invoices via search with default limit when active', async () => {
+    searchInvoicesMock.mockResolvedValue([sampleInvoice()])
     updateInvoiceMock.mockResolvedValue(
       sampleInvoice({
         supplierCity: 'Rotterdam',
@@ -56,6 +53,9 @@ describe('InvoiceList', () => {
     const user = userEvent.setup()
     render(<InvoiceList active />)
 
+    expect(searchInvoicesMock).toHaveBeenCalledWith(
+      expect.objectContaining({ limit: 25, paid: false, updated: false }),
+    )
     expect(await screen.findByText('Uploaded invoices')).toBeInTheDocument()
     const row = screen.getByRole('row', { name: /Acme Supplies/ })
     await user.click(within(row).getByRole('button', { name: 'Edit' }))
@@ -81,30 +81,38 @@ describe('InvoiceList', () => {
   })
 
   it('runs a semantic search with optional filters', async () => {
-    listInvoicesMock.mockResolvedValue([sampleInvoice()])
-    searchInvoicesMock.mockResolvedValue([
-      sampleInvoice({ id: 9, supplier: 'Electric Works', amount: 480 }),
-    ])
+    searchInvoicesMock.mockResolvedValue([sampleInvoice()])
     const user = userEvent.setup()
     render(<InvoiceList active />)
 
     expect(await screen.findByText('Acme Supplies')).toBeInTheDocument()
+
+    searchInvoicesMock.mockResolvedValue([
+      sampleInvoice({ id: 9, supplier: 'Electric Works', amount: 480 }),
+    ])
+
     await user.type(
       screen.getByLabelText('Semantic search'),
       'electrician around 500',
     )
     await user.type(screen.getByLabelText('Min amount'), '100')
     await user.type(screen.getByLabelText('Currency'), 'EUR')
+    await user.selectOptions(screen.getByLabelText('Limit'), '50')
+    await user.click(screen.getByLabelText('Paid'))
+    await user.click(screen.getByLabelText('Updated'))
     await user.click(screen.getByRole('button', { name: 'Search' }))
 
-    expect(searchInvoicesMock).toHaveBeenCalledWith(
+    expect(searchInvoicesMock).toHaveBeenLastCalledWith(
       expect.objectContaining({
         q: 'electrician around 500',
         minAmount: '100',
         currency: 'EUR',
+        limit: 50,
+        paid: true,
+        updated: true,
       }),
     )
     expect(await screen.findByText('Electric Works')).toBeInTheDocument()
-    expect(screen.getByText('1 search result')).toBeInTheDocument()
+    expect(screen.getByText('1 result')).toBeInTheDocument()
   })
 })

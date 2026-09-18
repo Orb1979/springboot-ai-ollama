@@ -313,7 +313,7 @@ textarea:focus {
 .invoice-search-filters {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 12px;
+  gap: 15px;
 }
 
 .invoice-search-filters label {
@@ -324,7 +324,18 @@ textarea:focus {
   font-weight: 600;
 }
 
+.invoice-search-checkboxes {
+  display: flex;
+  gap: 15px;
+  align-items: start;
+}
+
+.invoice-search-checkboxes label {
+  width: max-content;
+}
+
 .invoice-search-filters input,
+.invoice-search-filters select,
 .invoice-search-field input {
   width: 100%;
   min-width: 0;
@@ -333,6 +344,28 @@ textarea:focus {
   border-radius: 6px;
   background: var(--paper);
   color: var(--ink);
+}
+
+.invoice-search-checkbox-slot {
+  display: flex;
+  align-items: center;
+  min-height: calc(1.2em + 20px);
+}
+
+.invoice-search-filters input[type='checkbox'] {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  flex: none;
+}
+
+.invoice-search-actions {
+  justify-content: flex-start;
+  gap: 12px;
+  margin-bottom: 18px;
 }
 
 .invoice-result-count {
