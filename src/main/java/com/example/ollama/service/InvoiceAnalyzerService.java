@@ -116,8 +116,9 @@ public class InvoiceAnalyzerService {
 		invoice.setSupplier(update.supplier());
 		invoice.setSupplierStreet(update.supplierStreet());
 		invoice.setSupplierStreetNumber(update.supplierStreetNumber());
-		invoice.setSupplierCity(update.supplierCity());
 		invoice.setSupplierPostalCode(update.supplierPostalCode());
+		invoice.setSupplierCity(update.supplierCity());
+		invoice.setSupplierCountry(update.supplierCountry());
 		invoice.setInvoiceNumber(update.invoiceNumber());
 		invoice.setInvoiceDate(update.invoiceDate());
 		invoice.setAmount(update.amount());
