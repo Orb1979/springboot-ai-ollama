@@ -13,9 +13,11 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Log4j2
@@ -147,7 +149,7 @@ public class InvoiceEmbeddingService {
 		if (invoiceId == null) {
 			throw new InvoiceEmbedException("invoiceId is null");
 		}
-		return "invoice-" + invoiceId;
+		return UUID.nameUUIDFromBytes(("invoice-" + invoiceId).getBytes(StandardCharsets.UTF_8)).toString();
 	}
 
 	private static Long parseInvoiceId(Document document) {
