@@ -11,6 +11,8 @@ export type InvoiceSearchParams = {
   currency?: string
   fromDate?: string
   toDate?: string
+  paid?: boolean
+  updated?: boolean
   limit?: number
 }
 
@@ -90,6 +92,12 @@ export async function searchInvoices(
   }
   if (params.toDate?.trim()) {
     query.set('toDate', params.toDate.trim())
+  }
+  if (params.paid) {
+    query.set('paid', 'true')
+  }
+  if (params.updated) {
+    query.set('updated', 'true')
   }
   if (params.limit != null) {
     query.set('limit', String(params.limit))

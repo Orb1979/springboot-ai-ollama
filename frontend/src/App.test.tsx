@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
-import { listInvoices } from './api/client'
+import { searchInvoices } from './api/client'
 
 vi.mock('./api/client', async () => {
   const actual = await vi.importActual<typeof import('./api/client')>(
@@ -10,16 +10,16 @@ vi.mock('./api/client', async () => {
   )
   return {
     ...actual,
-    listInvoices: vi.fn(),
+    searchInvoices: vi.fn(),
   }
 })
 
-const listInvoicesMock = vi.mocked(listInvoices)
+const searchInvoicesMock = vi.mocked(searchInvoices)
 
 describe('App', () => {
   beforeEach(() => {
-    listInvoicesMock.mockReset()
-    listInvoicesMock.mockResolvedValue([])
+    searchInvoicesMock.mockReset()
+    searchInvoicesMock.mockResolvedValue([])
   })
 
   it('switches between chat, uploader, and invoices tabs', async () => {
@@ -50,7 +50,9 @@ describe('App', () => {
       'aria-selected',
       'true',
     )
-    expect(listInvoicesMock).toHaveBeenCalled()
+    expect(searchInvoicesMock).toHaveBeenCalledWith(
+      expect.objectContaining({ limit: 25 }),
+    )
   })
 
   it('supports arrow-key tab navigation with one tab stop', async () => {

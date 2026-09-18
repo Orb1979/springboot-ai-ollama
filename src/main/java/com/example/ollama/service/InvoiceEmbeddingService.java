@@ -68,10 +68,8 @@ public class InvoiceEmbeddingService {
 
 	public List<InvoiceSearchHit> search(InvoiceSearchCriteria criteria) {
 		if (!criteria.hasQuery()) {
-			List<Invoice> invoices = criteria.hasFilters()
-					? invoiceRepository.findMatching(criteria)
-					: invoiceRepository.findAll();
-			return invoices.stream()
+			return invoiceRepository.findMatching(criteria)
+					.stream()
 					.map(invoice -> new InvoiceSearchHit(invoice, null))
 					.toList();
 		}
@@ -79,7 +77,10 @@ public class InvoiceEmbeddingService {
 	}
 
 	private List<InvoiceSearchHit> similaritySearch(InvoiceSearchCriteria criteria) {
-		int fetchSize = InvoiceSearchCriteria.MAX_LIMIT;
+		int fetchSize = Math.min(
+				InvoiceSearchCriteria.MAX_LIMIT,
+				Math.max(criteria.limit() * 3, criteria.limit())
+		);
 
 		List<Document> documents = vectorStore.similaritySearch(
 				SearchRequest.builder()
@@ -121,6 +122,7 @@ public class InvoiceEmbeddingService {
 					return new InvoiceSearchHit(invoice, document.getScore());
 				})
 				.filter(Objects::nonNull)
+				.limit(criteria.limit())
 				.toList();
 	}
 

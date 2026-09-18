@@ -137,6 +137,28 @@ describe('API client', () => {
     )
   })
 
+  it('searches invoices with paid updated and limit params', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify([]), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(
+      searchInvoices({
+        paid: true,
+        updated: true,
+        limit: 25,
+      }),
+    ).resolves.toEqual([])
+
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      '/ai/invoices/search?paid=true&updated=true&limit=25',
+    )
+  })
+
   it('uses a backend error message when a request fails', async () => {
     vi.stubGlobal(
       'fetch',

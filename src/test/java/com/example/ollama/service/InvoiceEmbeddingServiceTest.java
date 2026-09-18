@@ -103,12 +103,27 @@ class InvoiceEmbeddingServiceTest {
 		String query = "acme corp";
 
 		List<InvoiceSearchHit> results = service.search(
-				new InvoiceSearchCriteria(query, null, null, null, null, null, 20)
+				new InvoiceSearchCriteria(query, null, null, null, null, null, null, null, 25)
 		);
 
 		assertThat(results)
 				.extracting(hit -> hit.invoice().getId())
 				.containsExactly(1L, 2L);
+	}
+
+	@Test
+	void search_withoutQuery_usesFindMatchingWithLimit() {
+		Invoice invoice = sample(1L);
+		var criteria = new InvoiceSearchCriteria(null, null, null, null, null, null, null, null, 25);
+
+		when(invoiceRepository.findMatching(criteria)).thenReturn(List.of(invoice));
+
+		List<InvoiceSearchHit> results = service.search(criteria);
+
+		assertThat(results).hasSize(1);
+		verify(invoiceRepository).findMatching(criteria);
+		verify(invoiceRepository, never()).findAll();
+		verify(vectorStore, never()).similaritySearch(any(SearchRequest.class));
 	}
 
 	@Test
@@ -121,7 +136,9 @@ class InvoiceEmbeddingServiceTest {
 				"EUR",
 				LocalDate.of(2024, 1, 1),
 				LocalDate.of(2024, 12, 31),
-				20
+				null,
+				null,
+				25
 		);
 
 		when(invoiceRepository.findMatching(criteria)).thenReturn(List.of(eur));
@@ -162,7 +179,9 @@ class InvoiceEmbeddingServiceTest {
 				"EUR",
 				null,
 				null,
-				20
+				null,
+				null,
+				25
 		);
 
 		when(invoiceRepository.findMatchingByIds(List.of(1L, 2L), criteria))

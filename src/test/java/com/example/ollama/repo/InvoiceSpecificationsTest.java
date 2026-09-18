@@ -16,7 +16,7 @@ class InvoiceSpecificationsTest {
 	@Test
 	void matching_returnsConjunctionEvenWhenNoFilters() {
 		Specification<Invoice> spec = InvoiceSpecifications.matching(
-				new InvoiceSearchCriteria(null, null, null, null, null, null, 20)
+				new InvoiceSearchCriteria(null, null, null, null, null, null, null, null, 25)
 		);
 
 		assertThat(spec).isNotNull();
@@ -26,11 +26,11 @@ class InvoiceSpecificationsTest {
 	void matchingByIds_returnsUnsatisfiableSpecForEmptyIds() {
 		Specification<Invoice> empty = InvoiceSpecifications.matchingByIds(
 				List.of(),
-				new InvoiceSearchCriteria(null, new BigDecimal("10"), null, null, null, null, 20)
+				new InvoiceSearchCriteria(null, new BigDecimal("10"), null, null, null, null, null, null, 25)
 		);
 		Specification<Invoice> nullIds = InvoiceSpecifications.matchingByIds(
 				null,
-				new InvoiceSearchCriteria(null, new BigDecimal("10"), null, null, null, null, 20)
+				new InvoiceSearchCriteria(null, new BigDecimal("10"), null, null, null, null, null, null, 25)
 		);
 
 		assertThat(empty).isNotNull();
@@ -48,8 +48,19 @@ class InvoiceSpecificationsTest {
 						null,
 						LocalDate.of(2024, 1, 1),
 						null,
-						20
+						null,
+						null,
+						25
 				)
+		);
+
+		assertThat(spec).isNotNull();
+	}
+
+	@Test
+	void matching_acceptsPaidAndUpdatedFlags() {
+		Specification<Invoice> spec = InvoiceSpecifications.matching(
+				new InvoiceSearchCriteria(null, null, null, null, null, null, true, true, 25)
 		);
 
 		assertThat(spec).isNotNull();

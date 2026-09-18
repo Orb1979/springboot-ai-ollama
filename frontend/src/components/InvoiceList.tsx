@@ -1,6 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import {
-  listInvoices,
   searchInvoices,
   updateInvoice,
   type InvoiceSearchParams,
@@ -19,13 +18,18 @@ type InvoiceListProps = {
   active: boolean
 }
 
-const emptySearch: InvoiceSearchParams = {
+const LIMIT_OPTIONS = [10, 25, 50, 100] as const
+
+const defaultSearch: InvoiceSearchParams = {
   q: '',
   minAmount: '',
   maxAmount: '',
   currency: '',
   fromDate: '',
   toDate: '',
+  paid: false,
+  updated: false,
+  limit: 25,
 }
 
 export function InvoiceList({ active }: InvoiceListProps) {
@@ -38,10 +42,7 @@ export function InvoiceList({ active }: InvoiceListProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isSearching, setIsSearching] = useState(false)
-  const [searchDraft, setSearchDraft] = useState<InvoiceSearchParams>(emptySearch)
-  const [activeSearch, setActiveSearch] = useState<InvoiceSearchParams | null>(
-    null,
-  )
+  const [searchDraft, setSearchDraft] = useState<InvoiceSearchParams>(defaultSearch)
 
   useEffect(() => {
     if (!active) {
@@ -51,10 +52,9 @@ export function InvoiceList({ active }: InvoiceListProps) {
     let cancelled = false
     setIsLoading(true)
     setError('')
-    setActiveSearch(null)
-    setSearchDraft(emptySearch)
+    setSearchDraft(defaultSearch)
 
-    void listInvoices()
+    void searchInvoices(defaultSearch)
       .then((items) => {
         if (!cancelled) {
           setInvoices(items)
@@ -121,7 +121,6 @@ export function InvoiceList({ active }: InvoiceListProps) {
     try {
       const results = await searchInvoices(searchDraft)
       setInvoices(results)
-      setActiveSearch(searchDraft)
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -136,10 +135,9 @@ export function InvoiceList({ active }: InvoiceListProps) {
   async function handleClearSearch() {
     setIsSearching(true)
     setError('')
-    setSearchDraft(emptySearch)
-    setActiveSearch(null)
+    setSearchDraft(defaultSearch)
     try {
-      setInvoices(await listInvoices())
+      setInvoices(await searchInvoices(defaultSearch))
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -201,9 +199,7 @@ export function InvoiceList({ active }: InvoiceListProps) {
     )
   }
 
-  const resultLabel = activeSearch
-    ? `${invoices.length} search result${invoices.length === 1 ? '' : 's'}`
-    : undefined
+  const resultLabel = `${invoices.length} result${invoices.length === 1 ? '' : 's'}`
 
   return (
     <section
@@ -303,18 +299,71 @@ export function InvoiceList({ active }: InvoiceListProps) {
               }
             />
           </label>
+          <label htmlFor="invoice-limit">
+            <span>Limit</span>
+            <select
+              id="invoice-limit"
+              value={searchDraft.limit ?? 25}
+              onChange={(event) =>
+                setSearchDraft((current) => ({
+                  ...current,
+                  limit: Number(event.target.value),
+                }))
+              }
+            >
+              {LIMIT_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="invoice-search-checkboxes">
+            <label htmlFor="invoice-paid">
+              <span>Paid</span>
+              <span className="invoice-search-checkbox-slot">
+                <input
+                  id="invoice-paid"
+                  type="checkbox"
+                  checked={Boolean(searchDraft.paid)}
+                  onChange={(event) =>
+                    setSearchDraft((current) => ({
+                      ...current,
+                      paid: event.target.checked,
+                    }))
+                  }
+                />
+              </span>
+            </label>
+            <label htmlFor="invoice-updated">
+              <span>Updated</span>
+              <span className="invoice-search-checkbox-slot">
+                <input
+                  id="invoice-updated"
+                  type="checkbox"
+                  checked={Boolean(searchDraft.updated)}
+                  onChange={(event) =>
+                    setSearchDraft((current) => ({
+                      ...current,
+                      updated: event.target.checked,
+                    }))
+                  }
+                />
+              </span>
+            </label>
+          </div>
         </div>
-        <div className="form-actions form-actions-split">
+        <div className="form-actions invoice-search-actions">
+          <button className="primary-button" type="submit" disabled={isSearching}>
+            {isSearching ? 'Searching…' : 'Search'}
+          </button>
           <button
             className="secondary-button"
             type="button"
-            disabled={isSearching || (!activeSearch && !searchDraft.q)}
+            disabled={isSearching}
             onClick={() => void handleClearSearch()}
           >
-            Show all
-          </button>
-          <button className="primary-button" type="submit" disabled={isSearching}>
-            {isSearching ? 'Searching…' : 'Search'}
+            Reset
           </button>
         </div>
       </form>

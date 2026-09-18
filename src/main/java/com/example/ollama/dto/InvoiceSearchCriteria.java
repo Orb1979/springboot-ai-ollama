@@ -10,9 +10,11 @@ public record InvoiceSearchCriteria(
 		String currency,
 		LocalDate fromDate,
 		LocalDate toDate,
+		Boolean paid,
+		Boolean updated,
 		int limit
 ) {
-	public static final int DEFAULT_LIMIT = 20;
+	public static final int DEFAULT_LIMIT = 25;
 	public static final int MAX_LIMIT = 100;
 
 	public InvoiceSearchCriteria {
@@ -28,6 +30,12 @@ public record InvoiceSearchCriteria(
 		if (query != null && query.isBlank()) {
 			query = null;
 		}
+		if (!Boolean.TRUE.equals(paid)) {
+			paid = null;
+		}
+		if (!Boolean.TRUE.equals(updated)) {
+			updated = null;
+		}
 	}
 
 	public boolean hasQuery() {
@@ -39,6 +47,8 @@ public record InvoiceSearchCriteria(
 				|| maxAmount != null
 				|| currency != null
 				|| fromDate != null
-				|| toDate != null;
+				|| toDate != null
+				|| Boolean.TRUE.equals(paid)
+				|| Boolean.TRUE.equals(updated);
 	}
 }

@@ -25,7 +25,9 @@ public final class InvoiceSpecifications {
 				predicates.add(cb.lessThanOrEqualTo(root.get("amount"), criteria.maxAmount()));
 			}
 			if (criteria.currency() != null) {
-				predicates.add(cb.equal(cb.lower(root.get("currency")), criteria.currency().toLowerCase(Locale.ROOT)
+				predicates.add(cb.equal(
+						cb.lower(root.get("currency")),
+						criteria.currency().toLowerCase(Locale.ROOT)
 				));
 			}
 			if (criteria.fromDate() != null) {
@@ -34,7 +36,16 @@ public final class InvoiceSpecifications {
 			if (criteria.toDate() != null) {
 				predicates.add(cb.lessThanOrEqualTo(root.get("invoiceDate"), criteria.toDate()));
 			}
+			if (Boolean.TRUE.equals(criteria.paid())) {
+				predicates.add(cb.isNotNull(root.get("paymentReceivedDate")));
+			}
+			if (Boolean.TRUE.equals(criteria.updated())) {
+				predicates.add(cb.isNotNull(root.get("updatedDate")));
+			}
 
+			if (predicates.isEmpty()) {
+				return cb.conjunction();
+			}
 			return cb.and(predicates.toArray(Predicate[]::new));
 		};
 	}
