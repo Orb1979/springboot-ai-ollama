@@ -20,6 +20,9 @@ public record InvoiceSearchCriteria(
 	public static final int MAX_LIMIT = 100;
 
 	public InvoiceSearchCriteria {
+		if (semanticQuery != null && semanticQuery.isBlank()) {
+			semanticQuery = null;
+		}
 		if (currency != null && currency.isBlank()) {
 			currency = null;
 		}

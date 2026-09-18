@@ -60,6 +60,14 @@ class InvoiceSearchCriteriaTest {
 	}
 
 	@Test
+	void blankSemanticQuery_isTreatedAsAbsent() {
+		var criteria = new InvoiceSearchCriteria(" \t ", null, null, null, null, null, null, null, null, null, 25);
+
+		assertThat(criteria.semanticQuery()).isNull();
+		assertThat(criteria.hasSemanticQuery()).isFalse();
+	}
+
+	@Test
 	void falsePaidAndUpdated_areTreatedAsAbsent() {
 		var criteria = new InvoiceSearchCriteria(null, null, null, null, null, null, false, false, null, null, 25);
 

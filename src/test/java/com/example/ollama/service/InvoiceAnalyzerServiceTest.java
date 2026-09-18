@@ -91,6 +91,7 @@ class InvoiceAnalyzerServiceTest {
 
 		invoiceAnalyzerService.searchInvoices(ui);
 
+		verify(invoiceQueryInterpreter).interpret("acme");
 		verify(invoiceEmbeddingService).search(ui);
 	}
 

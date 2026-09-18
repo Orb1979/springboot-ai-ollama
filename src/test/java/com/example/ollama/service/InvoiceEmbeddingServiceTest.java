@@ -198,6 +198,42 @@ class InvoiceEmbeddingServiceTest {
 		assertThat(results.getFirst().similarityScore()).isEqualTo(0.9);
 	}
 
+	@Test
+	void search_withQueryAndFilters_fallsBackToSqlMatchesWhenSemanticIntersectionIsEmpty() {
+		Document semanticMatch = Document.builder()
+				.id(InvoiceEmbeddingService.createDocumentId(2L))
+				.text("Supplier: Bright Office Supplies Ltd")
+				.metadata(InvoiceEmbeddingService.METADATA_INVOICE_ID, "2")
+				.score(0.8)
+				.build();
+		var criteria = new InvoiceSearchCriteria(
+				"office supplies",
+				new BigDecimal("100"),
+				null,
+				"EUR",
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				25
+		);
+		Invoice sqlMatch = sample(1L, new BigDecimal("150.00"), "EUR", LocalDate.of(2024, 6, 1));
+
+		when(vectorStore.similaritySearch(any(SearchRequest.class))).thenReturn(List.of(semanticMatch));
+		when(invoiceRepository.findMatchingByIds(List.of(2L), criteria)).thenReturn(List.of());
+		when(invoiceRepository.findMatching(criteria)).thenReturn(List.of(sqlMatch));
+
+		List<InvoiceSearchHit> results = service.search(criteria);
+
+		assertThat(results).singleElement().satisfies(hit -> {
+			assertThat(hit.invoice().getId()).isEqualTo(1L);
+			assertThat(hit.similarityScore()).isNull();
+		});
+		verify(invoiceRepository).findMatching(criteria);
+	}
+
 	private Invoice sample(Long id) {
 		return sample(id, "Acme Corp", new BigDecimal("99.90"), "EUR", LocalDate.of(2024, 3, 12));
 	}

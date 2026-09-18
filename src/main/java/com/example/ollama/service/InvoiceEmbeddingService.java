@@ -88,23 +88,30 @@ public class InvoiceEmbeddingService {
           .stream()
           .collect(Collectors.toMap(Invoice::getId, invoice -> invoice));
 
-		return documents.stream()
+		List<InvoiceSearchHit> hits = documents.stream()
 				       .map(document -> toSearchHit(document, invoicesById))
 				       .flatMap(Optional::stream)
 				       .limit(criteria.limit())
 				       .toList();
+		if (hits.isEmpty() && criteria.hasFilters()) {
+			return invoiceRepository.findMatching(criteria)
+					.stream()
+					.map(InvoiceSearchHit::new)
+					.toList();
+		}
+		return hits;
 	}
 
   // Maps a vector-store document to a search hit if its invoice exists in invoicesById;
 	private static Optional<InvoiceSearchHit> toSearchHit(Document document, Map<Long, Invoice> invoicesById) {
 		Long invoiceId = parseInvoiceId(document);
 		if (invoiceId == null) {
-			// filtered out (by the SQL filters on InvoiceSearchCriteria)
+			// missing or unparseable invoice ID metadata
 			return Optional.empty();
 		}
 		Invoice invoice = invoicesById.get(invoiceId);
 		if (invoice == null) {
-			// orphaned (present in vector table but missing in invoice table)
+			// filtered out by SQL criteria and/or orphaned vector document
 			return Optional.empty();
 		}
 		return Optional.of(new InvoiceSearchHit(invoice, document.getScore()));
