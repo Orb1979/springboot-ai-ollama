@@ -18,6 +18,15 @@ public record InvoiceSearchCriteria(
 	public static final int MAX_LIMIT = 100;
 
 	public InvoiceSearchCriteria {
+		if (currency != null && currency.isBlank()) {
+			currency = null;
+		}
+		if (Boolean.FALSE.equals(paid)) {
+			paid = null;
+		}
+		if (Boolean.FALSE.equals(updated)) {
+			updated = null;
+		}
 		if (limit <= 0) {
 			limit = DEFAULT_LIMIT;
 		}
