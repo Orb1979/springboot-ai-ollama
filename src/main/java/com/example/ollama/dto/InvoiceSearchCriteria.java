@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public record InvoiceSearchCriteria(
-		String query,
+		String semanticQuery,
 		BigDecimal minAmount,
 		BigDecimal maxAmount,
 		String currency,
@@ -24,22 +24,10 @@ public record InvoiceSearchCriteria(
 		if (limit > MAX_LIMIT) {
 			limit = MAX_LIMIT;
 		}
-		if (currency != null && currency.isBlank()) {
-			currency = null;
-		}
-		if (query != null && query.isBlank()) {
-			query = null;
-		}
-		if (!Boolean.TRUE.equals(paid)) {
-			paid = null;
-		}
-		if (!Boolean.TRUE.equals(updated)) {
-			updated = null;
-		}
 	}
 
-	public boolean hasQuery() {
-		return query != null && !query.isBlank();
+	public boolean hasSemanticQuery() {
+		return semanticQuery != null && !semanticQuery.isBlank();
 	}
 
 	public boolean hasFilters() {

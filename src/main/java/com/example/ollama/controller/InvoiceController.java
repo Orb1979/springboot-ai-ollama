@@ -59,8 +59,7 @@ public class InvoiceController {
 			@RequestParam(required = false) Boolean updated,
 			@RequestParam(required = false, defaultValue = "25") int limit) {
 		return invoiceAnalyzeService.searchInvoices(
-						new InvoiceSearchCriteria(
-								q, minAmount, maxAmount, currency, fromDate, toDate, paid, updated, limit))
+						new InvoiceSearchCriteria(q, minAmount, maxAmount, currency, fromDate, toDate, paid, updated, limit))
 				.stream()
 				.map(InvoiceMapper::toResponse)
 				.toList();

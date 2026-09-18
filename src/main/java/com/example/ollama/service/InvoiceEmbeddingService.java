@@ -14,18 +14,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Log4j2
 @Service
 public class InvoiceEmbeddingService {
-
 	static final String METADATA_INVOICE_ID = "invoiceId";
-
 	private final VectorStore vectorStore;
 	private final InvoiceRepository invoiceRepository;
 	private final double similarityThreshold;
@@ -35,7 +30,6 @@ public class InvoiceEmbeddingService {
 			InvoiceRepository invoiceRepository,
 			@Value("${app.ai.search.similarity-threshold}")
 			double similarityThreshold) {
-
 		this.vectorStore = vectorStore;
 		this.invoiceRepository = invoiceRepository;
 		this.similarityThreshold = similarityThreshold;
@@ -67,63 +61,53 @@ public class InvoiceEmbeddingService {
 	}
 
 	public List<InvoiceSearchHit> search(InvoiceSearchCriteria criteria) {
-		if (!criteria.hasQuery()) {
+		if (!criteria.hasSemanticQuery()) {
 			return invoiceRepository.findMatching(criteria)
 					.stream()
-					.map(invoice -> new InvoiceSearchHit(invoice, null))
+					.map(InvoiceSearchHit::new)
 					.toList();
 		}
-		return similaritySearch(criteria);
+		return semanticSearch(criteria);
 	}
 
-	private List<InvoiceSearchHit> similaritySearch(InvoiceSearchCriteria criteria) {
-		int fetchSize = Math.min(
-				InvoiceSearchCriteria.MAX_LIMIT,
-				Math.max(criteria.limit() * 3, criteria.limit())
-		);
-
+	private List<InvoiceSearchHit> semanticSearch(InvoiceSearchCriteria criteria) {
 		List<Document> documents = vectorStore.similaritySearch(
 				SearchRequest.builder()
-						.query(criteria.query())
-						.topK(fetchSize)
+						.query(criteria.semanticQuery())
+						.topK(InvoiceSearchCriteria.MAX_LIMIT)
 						.similarityThreshold(similarityThreshold)
 						.build()
 		);
 
-		if (documents.isEmpty()) {
-			return List.of();
-		}
+		List<Long> invoiceIds = documents.stream()
+          .map(InvoiceEmbeddingService::parseInvoiceId)
+          .filter(Objects::nonNull)
+          .toList();
 
-		List<Long> invoiceIds =
-				documents.stream()
-						.map(InvoiceEmbeddingService::parseInvoiceId)
-						.filter(Objects::nonNull)
-						.toList();
-
-		if (invoiceIds.isEmpty()) {
-			return List.of();
-		}
-
-		Map<Long, Invoice> invoices =
-				invoiceRepository.findMatchingByIds(invoiceIds, criteria)
-						.stream()
-						.collect(Collectors.toMap(
-								Invoice::getId,
-								invoice -> invoice
-						));
+		Map<Long, Invoice> invoicesById = invoiceRepository.findMatchingByIds(invoiceIds, criteria)
+          .stream()
+          .collect(Collectors.toMap(Invoice::getId, invoice -> invoice));
 
 		return documents.stream()
-				.map(document -> {
-					Long invoiceId = parseInvoiceId(document);
-					Invoice invoice = invoices.get(invoiceId);
-					if (invoice == null) {
-						return null;
-					}
-					return new InvoiceSearchHit(invoice, document.getScore());
-				})
-				.filter(Objects::nonNull)
-				.limit(criteria.limit())
-				.toList();
+				       .map(document -> toSearchHit(document, invoicesById))
+				       .flatMap(Optional::stream)
+				       .limit(criteria.limit())
+				       .toList();
+	}
+
+  // Maps a vector-store document to a search hit if its invoice exists in invoicesById;
+	private static Optional<InvoiceSearchHit> toSearchHit(Document document, Map<Long, Invoice> invoicesById) {
+		Long invoiceId = parseInvoiceId(document);
+		if (invoiceId == null) {
+			// filtered out (by the SQL filters on InvoiceSearchCriteria)
+			return Optional.empty();
+		}
+		Invoice invoice = invoicesById.get(invoiceId);
+		if (invoice == null) {
+			// orphaned (present in vector table but missing in invoice table)
+			return Optional.empty();
+		}
+		return Optional.of(new InvoiceSearchHit(invoice, document.getScore()));
 	}
 
 	static String toSummary(Invoice invoice) {
