@@ -99,6 +99,10 @@ class InvoiceAnalyzerServiceTest {
 
 		assertThat(result.getSupplier()).isEqualTo("Updated Corp");
 		assertThat(result.getSupplierStreet()).isEqualTo("New Street");
+		assertThat(result.getSupplierStreetNumber()).isEqualTo("99");
+		assertThat(result.getSupplierPostalCode()).isEqualTo("3500 AA");
+		assertThat(result.getSupplierCity()).isEqualTo("Utrecht");
+		assertThat(result.getSupplierCountry()).isEqualTo("Netherlands");
 		assertThat(result.getUploadedDate()).isEqualTo(Instant.parse("2026-09-15T09:00:00Z"));
 		assertThat(result.getPaymentReceivedDate()).isEqualTo(Instant.parse("2024-05-01T11:22:00Z"));
 		assertThat(result.getUpdatedDate()).isNotNull();

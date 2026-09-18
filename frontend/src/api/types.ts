@@ -11,8 +11,9 @@ export interface InvoiceUpdateRequest {
   supplier: string
   supplierStreet: string
   supplierStreetNumber: string
-  supplierCity: string
   supplierPostalCode: string
+  supplierCity: string
+  supplierCountry: string
   invoiceNumber: string
   invoiceDate: string
   amount: number
@@ -25,8 +26,9 @@ export interface InvoiceResponse {
   supplier: string
   supplierStreet: string
   supplierStreetNumber: string
-  supplierCity: string
   supplierPostalCode: string
+  supplierCity: string
+  supplierCountry: string
   invoiceNumber: string
   invoiceDate: string
   amount: number
