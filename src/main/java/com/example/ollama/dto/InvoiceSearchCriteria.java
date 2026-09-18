@@ -12,6 +12,8 @@ public record InvoiceSearchCriteria(
 		LocalDate toDate,
 		Boolean paid,
 		Boolean updated,
+		String supplier,
+		String city,
 		int limit
 ) {
 	public static final int DEFAULT_LIMIT = 25;
@@ -26,6 +28,12 @@ public record InvoiceSearchCriteria(
 		}
 		if (Boolean.FALSE.equals(updated)) {
 			updated = null;
+		}
+		if (supplier != null && supplier.isBlank()) {
+			supplier = null;
+		}
+		if (city != null && city.isBlank()) {
+			city = null;
 		}
 		if (limit <= 0) {
 			limit = DEFAULT_LIMIT;
@@ -46,6 +54,8 @@ public record InvoiceSearchCriteria(
 				|| fromDate != null
 				|| toDate != null
 				|| Boolean.TRUE.equals(paid)
-				|| Boolean.TRUE.equals(updated);
+				|| Boolean.TRUE.equals(updated)
+				|| supplier != null
+				|| city != null;
 	}
 }

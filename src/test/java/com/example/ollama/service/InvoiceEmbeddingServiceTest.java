@@ -103,7 +103,7 @@ class InvoiceEmbeddingServiceTest {
 		String query = "acme corp";
 
 		List<InvoiceSearchHit> results = service.search(
-				new InvoiceSearchCriteria(query, null, null, null, null, null, null, null, 25)
+				new InvoiceSearchCriteria(query, null, null, null, null, null, null, null, null, null, 25)
 		);
 
 		assertThat(results)
@@ -114,7 +114,7 @@ class InvoiceEmbeddingServiceTest {
 	@Test
 	void search_withoutQuery_usesFindMatchingWithLimit() {
 		Invoice invoice = sample(1L);
-		var criteria = new InvoiceSearchCriteria(null, null, null, null, null, null, null, null, 25);
+		var criteria = new InvoiceSearchCriteria(null, null, null, null, null, null, null, null, null, null, 25);
 
 		when(invoiceRepository.findMatching(criteria)).thenReturn(List.of(invoice));
 
@@ -136,6 +136,8 @@ class InvoiceEmbeddingServiceTest {
 				"EUR",
 				LocalDate.of(2024, 1, 1),
 				LocalDate.of(2024, 12, 31),
+				null,
+				null,
 				null,
 				null,
 				25
@@ -177,6 +179,8 @@ class InvoiceEmbeddingServiceTest {
 				new BigDecimal("100"),
 				null,
 				"EUR",
+				null,
+				null,
 				null,
 				null,
 				null,
