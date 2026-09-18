@@ -65,19 +65,19 @@ public class InvoiceEmbeddingService {
 	}
 
 	public List<InvoiceSearchHit> search(InvoiceSearchCriteria criteria) {
-		// if no search params, just return a normal find all query
 		if (!criteria.hasQuery()) {
-			return invoiceRepository.findAll()
-					       .stream()
-					       .map(invoice -> new InvoiceSearchHit(invoice, null))
-					       .toList();
+			List<Invoice> invoices = criteria.hasFilters()
+					? invoiceRepository.findMatching(criteria)
+					: invoiceRepository.findAll();
+			return invoices.stream()
+					.map(invoice -> new InvoiceSearchHit(invoice, null))
+					.toList();
 		}
-		// similarity search (embed the user’s query, find nearest stored vectors):
 		return similaritySearch(criteria);
 	}
 
 	private List<InvoiceSearchHit> similaritySearch(InvoiceSearchCriteria criteria) {
-		int fetchSize = Math.min(InvoiceSearchCriteria.MAX_LIMIT, Math.max(criteria.limit() * 3, criteria.limit()));
+		int fetchSize = InvoiceSearchCriteria.MAX_LIMIT;
 
 		List<Document> documents = vectorStore.similaritySearch(
 				SearchRequest.builder()
@@ -93,33 +93,33 @@ public class InvoiceEmbeddingService {
 
 		List<Long> invoiceIds =
 				documents.stream()
-          .map(InvoiceEmbeddingService::parseInvoiceId)
-          .filter(Objects::nonNull)
-          .toList();
+						.map(InvoiceEmbeddingService::parseInvoiceId)
+						.filter(Objects::nonNull)
+						.toList();
 
 		if (invoiceIds.isEmpty()) {
 			return List.of();
 		}
 
 		Map<Long, Invoice> invoices =
-				invoiceRepository.findAllById(invoiceIds)
-            .stream()
-            .collect(Collectors.toMap(
-                Invoice::getId,
-                invoice -> invoice
-            ));
+				invoiceRepository.findMatchingByIds(invoiceIds, criteria)
+						.stream()
+						.collect(Collectors.toMap(
+								Invoice::getId,
+								invoice -> invoice
+						));
 
 		return documents.stream()
-			       .map(document -> {
-				       Long invoiceId = parseInvoiceId(document);
-				       Invoice invoice = invoices.get(invoiceId);
-				       if (invoice == null) {
-					       return null;
-				       }
-				       return new InvoiceSearchHit(invoice, document.getScore());
-			       })
-			       .filter(Objects::nonNull)
-			       .toList();
+				.map(document -> {
+					Long invoiceId = parseInvoiceId(document);
+					Invoice invoice = invoices.get(invoiceId);
+					if (invoice == null) {
+						return null;
+					}
+					return new InvoiceSearchHit(invoice, document.getScore());
+				})
+				.filter(Objects::nonNull)
+				.toList();
 	}
 
 	static String toSummary(Invoice invoice) {

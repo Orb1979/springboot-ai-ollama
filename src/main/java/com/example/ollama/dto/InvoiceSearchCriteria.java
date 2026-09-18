@@ -33,4 +33,12 @@ public record InvoiceSearchCriteria(
 	public boolean hasQuery() {
 		return query != null && !query.isBlank();
 	}
+
+	public boolean hasFilters() {
+		return minAmount != null
+				|| maxAmount != null
+				|| currency != null
+				|| fromDate != null
+				|| toDate != null;
+	}
 }
