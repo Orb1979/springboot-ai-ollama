@@ -37,6 +37,10 @@ class InvoiceMapperTest {
 		assertThat(response.id()).isEqualTo(42L);
 		assertThat(response.supplier()).isEqualTo("Acme Corp");
 		assertThat(response.supplierStreet()).isEqualTo("Main Street");
+		assertThat(response.supplierStreetNumber()).isEqualTo("42A");
+		assertThat(response.supplierPostalCode()).isEqualTo("1012 AB");
+		assertThat(response.supplierCity()).isEqualTo("Amsterdam");
+		assertThat(response.supplierCountry()).isEqualTo("Nettherladns");
 		assertThat(response.uploadedDate()).isEqualTo(Instant.parse("2026-09-15T10:00:00Z"));
 		assertThat(response.paymentReceivedDate()).isEqualTo(Instant.parse("2026-09-16T11:00:00Z"));
 		assertThat(response.updatedDate()).isEqualTo(Instant.parse("2026-09-17T12:00:00Z"));

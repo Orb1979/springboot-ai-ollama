@@ -44,14 +44,6 @@ export function InvoiceEditableFields({
           }
         />
       </label>
-      <label className="field" htmlFor={`${idPrefix}-city`}>
-        <span>City</span>
-        <input
-          id={`${idPrefix}-city`}
-          value={draft.supplierCity}
-          onChange={(event) => onChange('supplierCity', event.target.value)}
-        />
-      </label>
       <label className="field" htmlFor={`${idPrefix}-postal-code`}>
         <span>Postal code</span>
         <input
@@ -60,6 +52,22 @@ export function InvoiceEditableFields({
           onChange={(event) =>
             onChange('supplierPostalCode', event.target.value)
           }
+        />
+      </label>
+      <label className="field" htmlFor={`${idPrefix}-city`}>
+        <span>City</span>
+        <input
+          id={`${idPrefix}-city`}
+          value={draft.supplierCity}
+          onChange={(event) => onChange('supplierCity', event.target.value)}
+        />
+      </label>
+      <label className="field" htmlFor={`${idPrefix}-country`}>
+        <span>Country</span>
+        <input
+          id={`${idPrefix}-country`}
+          value={draft.supplierCountry}
+          onChange={(event) => onChange('supplierCountry', event.target.value)}
         />
       </label>
       <label className="field" htmlFor={`${idPrefix}-invoice-number`}>

@@ -21,8 +21,9 @@ function sampleInvoice(
     supplier: 'Acme Supplies',
     supplierStreet: 'Main Street',
     supplierStreetNumber: '42A',
-    supplierCity: 'Amsterdam',
     supplierPostalCode: '1012 AB',
+    supplierCity: 'Amsterdam',
+    supplierCountry: 'Netherlands',
     invoiceNumber: 'INV-2026-42',
     invoiceDate: '2024-03-12',
     amount: 1250.5,
@@ -58,6 +59,9 @@ describe('InvoiceAnalyzer', () => {
     )
     expect(screen.getByLabelText('Street')).toHaveValue('Main Street')
     expect(screen.getByLabelText('Street number')).toHaveValue('42A')
+    expect(screen.getByLabelText('Postal code')).toHaveValue('1012 AB')
+    expect(screen.getByLabelText('City')).toHaveValue('Amsterdam')
+    expect(screen.getByLabelText('Country')).toHaveValue('Netherlands')
     expect(screen.getByRole('button', { name: 'Update' })).toBeDisabled()
   })
 

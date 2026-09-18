@@ -8,8 +8,9 @@ export type InvoiceDraft = {
   supplier: string
   supplierStreet: string
   supplierStreetNumber: string
-  supplierCity: string
   supplierPostalCode: string
+  supplierCity: string
+  supplierCountry: string
   invoiceNumber: string
   invoiceDate: string
   amount: string
@@ -22,8 +23,9 @@ export function toDraft(invoice: InvoiceResponse): InvoiceDraft {
     supplier: invoice.supplier,
     supplierStreet: invoice.supplierStreet,
     supplierStreetNumber: invoice.supplierStreetNumber,
-    supplierCity: invoice.supplierCity,
     supplierPostalCode: invoice.supplierPostalCode,
+    supplierCity: invoice.supplierCity,
+    supplierCountry: invoice.supplierCountry,
     invoiceNumber: invoice.invoiceNumber,
     invoiceDate: invoice.invoiceDate,
     amount: String(invoice.amount),
@@ -50,8 +52,9 @@ export function toUpdatePayload(
     supplier: draft.supplier,
     supplierStreet: draft.supplierStreet,
     supplierStreetNumber: draft.supplierStreetNumber,
-    supplierCity: draft.supplierCity,
     supplierPostalCode: draft.supplierPostalCode,
+    supplierCity: draft.supplierCity,
+    supplierCountry: draft.supplierCountry,
     invoiceNumber: draft.invoiceNumber,
     invoiceDate: draft.invoiceDate,
     amount: Number(draft.amount),
