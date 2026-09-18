@@ -31,6 +31,7 @@ public class InvoiceAnalyzerService {
 	private final InvoiceValidator invoiceValidator;
 	private final InvoiceRepository invoiceRepository;
 	private final InvoiceEmbeddingService invoiceEmbeddingService;
+	private final InvoiceQueryInterpreter invoiceQueryInterpreter;
 
 	private static final String invoicePrompt = """
 			Extract the following information from this invoice:
@@ -70,13 +71,15 @@ public class InvoiceAnalyzerService {
 	    List<TextExtractor> textExtractors,
 	    InvoiceValidator invoiceValidator,
 	    InvoiceRepository invoiceRepository,
-	    InvoiceEmbeddingService invoiceEmbeddingService) {
+	    InvoiceEmbeddingService invoiceEmbeddingService,
+	    InvoiceQueryInterpreter invoiceQueryInterpreter) {
 		this.chatClient = chatClient;
 		this.fileTypeDetector = fileTypeDetector;
 		this.textExtractors = textExtractors;
 		this.invoiceValidator = invoiceValidator;
 		this.invoiceRepository = invoiceRepository;
 		this.invoiceEmbeddingService = invoiceEmbeddingService;
+		this.invoiceQueryInterpreter = invoiceQueryInterpreter;
 	}
 
 	public Invoice analyzeInvoice(MultipartFile file) throws IOException {
@@ -105,8 +108,14 @@ public class InvoiceAnalyzerService {
 		return invoiceRepository.findAll();
 	}
 
-	public List<InvoiceSearchHit> searchInvoices(InvoiceSearchCriteria criteria) {
-		return invoiceEmbeddingService.search(criteria);
+	public List<InvoiceSearchHit> searchInvoices(InvoiceSearchCriteria uiCriteria) {
+		if (!uiCriteria.hasSemanticQuery()) {
+			return invoiceEmbeddingService.search(uiCriteria);
+		}
+		InvoiceSearchCriteria merged = invoiceQueryInterpreter.interpret(uiCriteria.semanticQuery())
+				.map(interpretation -> InvoiceSearchCriteriaMerger.merge(uiCriteria, interpretation))
+				.orElse(uiCriteria);
+		return invoiceEmbeddingService.search(merged);
 	}
 
 	public Invoice updateInvoice(Long id, InvoiceUpdateRequest update) {

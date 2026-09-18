@@ -42,6 +42,18 @@ public final class InvoiceSpecifications {
 			if (Boolean.TRUE.equals(criteria.updated())) {
 				predicates.add(cb.isNotNull(root.get("updatedDate")));
 			}
+			if (criteria.supplier() != null) {
+				predicates.add(cb.like(
+						cb.lower(root.get("supplier")),
+						"%" + criteria.supplier().toLowerCase(Locale.ROOT) + "%"
+				));
+			}
+			if (criteria.city() != null) {
+				predicates.add(cb.like(
+						cb.lower(root.get("supplierCity")),
+						"%" + criteria.city().toLowerCase(Locale.ROOT) + "%"
+				));
+			}
 
 			if (predicates.isEmpty()) {
 				return cb.conjunction();
