@@ -49,6 +49,7 @@ public class InvoiceQueryInterpreter {
 			if (raw == null || raw.isBlank()) {
 				return Optional.empty();
 			}
+			log.info("LLM query interpretation for '{}': {}", rawQuery, raw);
 			return Optional.ofNullable(OUTPUT.convert(raw));
 		} catch (RuntimeException ex) {
 			log.warn("Failed to interpret search query '{}': {}", rawQuery, ex.getMessage());

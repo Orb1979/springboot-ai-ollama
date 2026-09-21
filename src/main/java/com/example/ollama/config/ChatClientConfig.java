@@ -21,10 +21,9 @@ public class ChatClientConfig {
 
 	/*
 		create OpenAIClient bean if a spring.ai.openai API key is configured
-  	Note: This is not needed for OllamaApi because its already created as a bean by Spring AI's auto-configuration
-  	(notice OllamaApi import is from org.springframework.ai.)
-	 */
-
+  	This is not needed for OllamaApi because its already created as a bean by Spring AI's
+  	auto-configuration because its part of org.springframework.ai)
+	*/
 	@Bean
 	@ConditionalOnProperty(prefix = "spring.ai.openai", name = "api-key")
 	public OpenAIClient openAIClient(@Value("${spring.ai.openai.api-key}") String apiKey) {
