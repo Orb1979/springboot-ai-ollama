@@ -21,6 +21,14 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long>, JpaSpec
 		).getContent();
 	}
 
+	/** Hard-filter matches used as the candidate pool before vector ranking (up to {@link InvoiceSearchCriteria#MAX_LIMIT}). */
+	default List<Invoice> findMatchingCandidates(InvoiceSearchCriteria criteria) {
+		return findAll(
+				InvoiceSpecifications.matching(criteria),
+				PageRequest.of(0, InvoiceSearchCriteria.MAX_LIMIT, Sort.by(Sort.Direction.DESC, "uploadedDate"))
+		).getContent();
+	}
+
 	default List<Invoice> findMatchingByIds(Collection<Long> ids, InvoiceSearchCriteria criteria) {
 		if (ids == null || ids.isEmpty()) {
 			return List.of();

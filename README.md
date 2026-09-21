@@ -36,17 +36,19 @@ export OPENAI_API_KEY=sk-...
 # test with e.g
 curl http://localhost:8080/ai/chat/test
 
-# semantic invoice search (optional filters: minAmount, maxAmount, currency, fromDate, toDate)
+# semantic invoice search (optional filters: minAmount, maxAmount, currency,
+# fromDate, toDate, paid, updated, supplier, city, limit)
 curl "http://localhost:8080/ai/invoices/search?q=electrician%20around%20500&currency=EUR"
 ```
 
 Switching embedding providers (Ollama ↔ OpenAI) requires matching
 `app.ai.embedding.*` and `spring.ai.vectorstore.pgvector.dimensions`, then
-recreating/clearing the `vector_store` table so embeddings are rebuilt.
+recreating/clearing the `vector_store` table so embeddings are rebuilt
+(e.g. nomic-embed-text → 768, text-embedding-3-small → 1536).
 
 Semantic search drops hits below `app.ai.search.similarity-threshold` (cosine
-similarity 0–1, default `0.5`) and ranks remaining results by vector score plus
-a light lexical boost so name matches like "Acme Corp" outrank weak neighbors.
+similarity 0–1; see `application.properties`) and ranks remaining results by
+vector score within the hard-filtered candidate set.
 
 ## Frontend
 
@@ -207,16 +209,17 @@ q blank?
   NO  →  1) LLM turns q into JSON fields
        → 2) Merge with UI SQL filters (UI wins when both set)
        → 3) Those fields are the hard SQL predicates (InvoiceSpecifications)
-       → similaritySearch(semanticQuery)
-         - Embed q
-         - ask Ask pgvector for the nearest documents (topK up to 100, above the similarity threshold) 
-         - results ranked list of vector documents which look similar
-       → findMatchingByIds(ids, criteria)    
-         - the ids of the similaritySearch + hard sql filters Intersection
-         - so vectors never relax SQL. They only order candidates that still have to satisfy filters.
-       → keep score order, apply limit
-       → if no similarity hits AND hasFilters → findMatching(criteria) fallback
-         (SQL-only with merged criteria, no scores)
+       → if hard filters present:
+           findMatchingCandidates(criteria)  // SQL first, up to MAX_LIMIT
+           similaritySearch(semanticQuery) with filterExpression on those invoiceIds
+             - Embed q
+             - ask pgvector for nearest docs only among SQL candidates
+             - results ranked by vector score within the filter set
+           keep score order, apply limit
+           if no vector hits → return SQL candidates (no scores)
+         else (no hard filters):
+           similaritySearch(semanticQuery) globally (topK up to MAX_LIMIT)
+           load invoices by id, keep score order, apply limit
 
 
 UI form ──► InvoiceSearchCriteria (ui)
@@ -226,6 +229,7 @@ q text  ──► LLM JSON ──► merge ──► InvoiceSearchCriteria (fina
                          │                         │
                    hard filters              semanticQuery
                    (SQL Specs)               (embeddings)
+
 
 
 

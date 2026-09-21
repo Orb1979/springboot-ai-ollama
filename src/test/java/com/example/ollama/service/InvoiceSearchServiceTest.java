@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.ArgumentCaptor;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -49,13 +50,13 @@ class InvoiceSearchServiceTest {
 		when(invoiceQueryInterpreter.interpret(ui.semanticQuery())).thenReturn(Optional.of(interpretation));
 
 		var expectedMerged = InvoiceSearchCriteriaMerger.merge(ui, interpretation);
-		when(invoiceRepository.findMatching(any())).thenReturn(List.of());
-		when(vectorStore.similaritySearch(any(SearchRequest.class))).thenReturn(List.of());
+		when(invoiceRepository.findMatchingCandidates(any())).thenReturn(List.of());
 
 		service.searchInvoices(ui);
 
 		verify(invoiceQueryInterpreter).interpret(ui.semanticQuery());
-		verify(vectorStore).similaritySearch(any(SearchRequest.class));
+		verify(invoiceRepository).findMatchingCandidates(expectedMerged);
+		verify(vectorStore, never()).similaritySearch(any(SearchRequest.class));
 		assertThat(expectedMerged.supplier()).isEqualTo("Acme");
 	}
 
@@ -143,52 +144,72 @@ class InvoiceSearchServiceTest {
 	}
 
 	@Test
-	void search_withQueryAndFilters_keepsScoreOrderButDropsNonMatching() {
+	void search_withQueryAndFilters_ranksOnlySqlCandidates() {
 		Document first = Document.builder()
 				.id(InvoiceEmbeddingService.createDocumentId(1L))
 				.text("Supplier: Acme Corp")
 				.metadata(InvoiceEmbeddingService.METADATA_INVOICE_ID, "1")
 				.score(0.9)
 				.build();
-		Document second = Document.builder()
-				.id(InvoiceEmbeddingService.createDocumentId(2L))
-				.text("Supplier: Bright Office Supplies Ltd")
-				.metadata(InvoiceEmbeddingService.METADATA_INVOICE_ID, "2")
-				.score(0.8)
-				.build();
-		when(vectorStore.similaritySearch(any(SearchRequest.class)))
-				.thenReturn(List.of(first, second));
-
 		Invoice matching = sample(1L, new BigDecimal("150.00"), "EUR", LocalDate.of(2024, 6, 1));
 		var criteria = new InvoiceSearchCriteria(
 				"office supplies", new BigDecimal("100"), null, "EUR",
 				null, null, null, null, null, null, 25);
-		when(invoiceRepository.findMatchingByIds(List.of(1L, 2L), criteria))
-				.thenReturn(List.of(matching));
+		when(invoiceRepository.findMatchingCandidates(criteria)).thenReturn(List.of(matching));
+		when(vectorStore.similaritySearch(any(SearchRequest.class))).thenReturn(List.of(first));
 
 		List<InvoiceSearchHit> results = service.search(criteria);
 
 		assertThat(results).hasSize(1);
 		assertThat(results.getFirst().invoice().getId()).isEqualTo(1L);
 		assertThat(results.getFirst().similarityScore()).isEqualTo(0.9);
+
+		ArgumentCaptor<SearchRequest> request = ArgumentCaptor.forClass(SearchRequest.class);
+		verify(vectorStore).similaritySearch(request.capture());
+		assertThat(request.getValue().getFilterExpression()).isNotNull();
+		assertThat(request.getValue().getTopK()).isEqualTo(25);
 	}
 
 	@Test
-	void search_withQueryAndFilters_fallsBackToSqlMatchesWhenSemanticIntersectionIsEmpty() {
-		Document semanticMatch = Document.builder()
-				.id(InvoiceEmbeddingService.createDocumentId(2L))
-				.text("Supplier: Bright Office Supplies Ltd")
-				.metadata(InvoiceEmbeddingService.METADATA_INVOICE_ID, "2")
-				.score(0.8)
+	void search_withQueryAndFilters_doesNotMissSqlCandidateOutsideGlobalTopK() {
+		Invoice eurMatch = sample(1L, new BigDecimal("150.00"), "EUR", LocalDate.of(2024, 6, 1));
+		var criteria = new InvoiceSearchCriteria(
+				"plumbing supplies", null, null, "EUR",
+				null, null, null, null, null, null, 10);
+		when(invoiceRepository.findMatchingCandidates(criteria)).thenReturn(List.of(eurMatch));
+
+		Document rankedWithinFilter = Document.builder()
+				.id(InvoiceEmbeddingService.createDocumentId(1L))
+				.text("Supplier: Acme Plumbing")
+				.metadata(InvoiceEmbeddingService.METADATA_INVOICE_ID, "1")
+				.score(0.51)
 				.build();
+		when(vectorStore.similaritySearch(any(SearchRequest.class)))
+				.thenReturn(List.of(rankedWithinFilter));
+
+		List<InvoiceSearchHit> results = service.search(criteria);
+
+		assertThat(results).singleElement().satisfies(hit -> {
+			assertThat(hit.invoice().getId()).isEqualTo(1L);
+			assertThat(hit.similarityScore()).isEqualTo(0.51);
+		});
+		verify(invoiceRepository).findMatchingCandidates(criteria);
+		verify(invoiceRepository, never()).findMatchingByIds(any(), any());
+
+		ArgumentCaptor<SearchRequest> request = ArgumentCaptor.forClass(SearchRequest.class);
+		verify(vectorStore).similaritySearch(request.capture());
+		assertThat(request.getValue().getFilterExpression()).isNotNull();
+	}
+
+	@Test
+	void search_withQueryAndFilters_fallsBackToSqlMatchesWhenNoVectorHits() {
 		var criteria = new InvoiceSearchCriteria(
 				"office supplies", new BigDecimal("100"), null, "EUR",
 				null, null, null, null, null, null, 25);
 		Invoice sqlMatch = sample(1L, new BigDecimal("150.00"), "EUR", LocalDate.of(2024, 6, 1));
 
-		when(vectorStore.similaritySearch(any(SearchRequest.class))).thenReturn(List.of(semanticMatch));
-		when(invoiceRepository.findMatchingByIds(List.of(2L), criteria)).thenReturn(List.of());
-		when(invoiceRepository.findMatching(criteria)).thenReturn(List.of(sqlMatch));
+		when(invoiceRepository.findMatchingCandidates(criteria)).thenReturn(List.of(sqlMatch));
+		when(vectorStore.similaritySearch(any(SearchRequest.class))).thenReturn(List.of());
 
 		List<InvoiceSearchHit> results = service.search(criteria);
 
@@ -196,7 +217,8 @@ class InvoiceSearchServiceTest {
 			assertThat(hit.invoice().getId()).isEqualTo(1L);
 			assertThat(hit.similarityScore()).isNull();
 		});
-		verify(invoiceRepository).findMatching(criteria);
+		verify(invoiceRepository).findMatchingCandidates(criteria);
+		verify(invoiceRepository, never()).findMatching(criteria);
 	}
 
 	private Invoice sample(Long id) {
