@@ -115,7 +115,6 @@ public class InvoiceSearchService {
 		List<InvoiceSearchHit> hits = documents.stream()
 				.map(document -> toSearchHit(document, invoicesById))
 				.flatMap(Optional::stream)
-				.limit(criteria.limit())
 				.toList();
 		if (hits.isEmpty()) {
 			return candidates.stream()
