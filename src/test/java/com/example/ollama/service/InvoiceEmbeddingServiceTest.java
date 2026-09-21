@@ -1,7 +1,7 @@
 package com.example.ollama.service;
 
 import com.example.ollama.entity.Invoice;
-import com.example.ollama.exception.InvoiceAnalyzeException;
+import com.example.ollama.exception.InvoiceEmbedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -66,7 +66,7 @@ class InvoiceEmbeddingServiceTest {
 		org.mockito.Mockito.doThrow(new RuntimeException("boom")).when(vectorStore).add(anyList());
 
 		assertThatThrownBy(() -> service.indexInvoice(invoice))
-				.isInstanceOf(InvoiceAnalyzeException.class)
+				.isInstanceOf(InvoiceEmbedException.class)
 				.hasMessageContaining("Failed to index invoice 1");
 	}
 

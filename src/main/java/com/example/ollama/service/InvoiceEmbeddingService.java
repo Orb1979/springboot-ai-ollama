@@ -1,7 +1,6 @@
 package com.example.ollama.service;
 
 import com.example.ollama.entity.Invoice;
-import com.example.ollama.exception.InvoiceAnalyzeException;
 import com.example.ollama.exception.InvoiceEmbedException;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.ai.document.Document;
@@ -39,7 +38,7 @@ public class InvoiceEmbeddingService {
 			vectorStore.delete(List.of(documentId));
 			vectorStore.add(List.of(document));
 		} catch (RuntimeException ex) {
-			throw new InvoiceAnalyzeException("Failed to index invoice %s in vector store".formatted(invoice.getId()), ex);
+			throw new InvoiceEmbedException("Failed to index invoice %s in vector store".formatted(invoice.getId()), ex);
 		}
 	}
 
