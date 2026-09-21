@@ -42,6 +42,10 @@ public class InvoiceSearchService {
 		this.similarityThreshold = similarityThreshold;
 	}
 
+	/**
+	 * Entry point for search: if {@code q} is present, interprets it via the LLM,
+	 * merges with UI criteria (UI wins), then runs SQL and/or semantic search.
+	 */
 	public List<InvoiceSearchHit> searchInvoices(InvoiceSearchCriteria uiCriteria) {
 		if (!uiCriteria.hasSemanticQuery()) {
 			return search(uiCriteria);
@@ -52,6 +56,9 @@ public class InvoiceSearchService {
 		return search(merged);
 	}
 
+	/**
+	 * Routes to SQL-only listing when there is no semantic query; otherwise vector search.
+	 */
 	List<InvoiceSearchHit> search(InvoiceSearchCriteria criteria) {
 		if (!criteria.hasSemanticQuery()) {
 			return invoiceRepository.findMatching(criteria)
@@ -62,6 +69,10 @@ public class InvoiceSearchService {
 		return semanticSearch(criteria);
 	}
 
+	/**
+	 * Ranks candidates by vector similarity, keeps only invoices that pass hard SQL filters,
+	 * and falls back to SQL-only results when no vector hits survive and filters are present.
+	 */
 	private List<InvoiceSearchHit> semanticSearch(InvoiceSearchCriteria criteria) {
 		List<Document> documents = vectorStore.similaritySearch(
 				SearchRequest.builder()
@@ -94,7 +105,7 @@ public class InvoiceSearchService {
 		return hits;
 	}
 
-	/** Maps a vector document to a hit when the invoice exists in {@code invoicesById}. */
+	/** Maps a vector document to a hit when the invoice exists. */
 	private static Optional<InvoiceSearchHit> toSearchHit(Document document, Map<Long, Invoice> invoicesById) {
 		Long invoiceId = parseInvoiceId(document);
 		if (invoiceId == null) {
@@ -103,12 +114,15 @@ public class InvoiceSearchService {
 		}
 		Invoice invoice = invoicesById.get(invoiceId);
 		if (invoice == null) {
-			// filtered out by SQL criteria and/or orphaned vector document
+			// The vector points at an invoice id that is not in the SQL result set. That can mean
+			// Filtered out — the invoice exists, but failed hard filters (amount, currency, city, etc.), or
+			// Orphaned — the invoice was deleted (or never existed) while the embedding was left behind.
 			return Optional.empty();
 		}
 		return Optional.of(new InvoiceSearchHit(invoice, document.getScore()));
 	}
 
+	/** Returns the invoice id from vector document or null if missing/invalid. */
 	private static Long parseInvoiceId(Document document) {
 		Object raw = document.getMetadata().get(InvoiceEmbeddingService.METADATA_INVOICE_ID);
 		if (raw == null) {
