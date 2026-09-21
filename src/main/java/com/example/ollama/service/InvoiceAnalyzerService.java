@@ -1,8 +1,6 @@
 package com.example.ollama.service;
 
 import com.example.ollama.dto.InvoiceExtractionResponse;
-import com.example.ollama.dto.InvoiceSearchCriteria;
-import com.example.ollama.dto.InvoiceSearchHit;
 import com.example.ollama.dto.InvoiceUpdateRequest;
 import com.example.ollama.domain.FileType;
 import com.example.ollama.entity.Invoice;
@@ -22,6 +20,10 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 
+/**
+ * Analyzes uploaded invoice documents: extract fields via LLM, validate, persist.
+ * when a documents get uploaded (created) or updated, it keeps the vector index in sync on.
+ */
 @Log4j2
 @Service
 public class InvoiceAnalyzerService {
@@ -31,7 +33,6 @@ public class InvoiceAnalyzerService {
 	private final InvoiceValidator invoiceValidator;
 	private final InvoiceRepository invoiceRepository;
 	private final InvoiceEmbeddingService invoiceEmbeddingService;
-	private final InvoiceQueryInterpreter invoiceQueryInterpreter;
 
 	private static final String invoicePrompt = """
 			Extract the following information from this invoice:
@@ -71,15 +72,13 @@ public class InvoiceAnalyzerService {
 	    List<TextExtractor> textExtractors,
 	    InvoiceValidator invoiceValidator,
 	    InvoiceRepository invoiceRepository,
-	    InvoiceEmbeddingService invoiceEmbeddingService,
-	    InvoiceQueryInterpreter invoiceQueryInterpreter) {
+	    InvoiceEmbeddingService invoiceEmbeddingService) {
 		this.chatClient = chatClient;
 		this.fileTypeDetector = fileTypeDetector;
 		this.textExtractors = textExtractors;
 		this.invoiceValidator = invoiceValidator;
 		this.invoiceRepository = invoiceRepository;
 		this.invoiceEmbeddingService = invoiceEmbeddingService;
-		this.invoiceQueryInterpreter = invoiceQueryInterpreter;
 	}
 
 	public Invoice analyzeInvoice(MultipartFile file) throws IOException {
@@ -106,16 +105,6 @@ public class InvoiceAnalyzerService {
 
 	public List<Invoice> listInvoices() {
 		return invoiceRepository.findAll();
-	}
-
-	public List<InvoiceSearchHit> searchInvoices(InvoiceSearchCriteria uiCriteria) {
-		if (!uiCriteria.hasSemanticQuery()) {
-			return invoiceEmbeddingService.search(uiCriteria);
-		}
-		InvoiceSearchCriteria merged = invoiceQueryInterpreter.interpret(uiCriteria.semanticQuery())
-				.map(interpretation -> InvoiceSearchCriteriaMerger.merge(uiCriteria, interpretation))
-				.orElse(uiCriteria);
-		return invoiceEmbeddingService.search(merged);
 	}
 
 	public Invoice updateInvoice(Long id, InvoiceUpdateRequest update) {

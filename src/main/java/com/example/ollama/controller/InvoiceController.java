@@ -6,6 +6,7 @@ import com.example.ollama.dto.InvoiceUpdateRequest;
 import com.example.ollama.exception.InvoiceAnalyzeException;
 import com.example.ollama.mapper.InvoiceMapper;
 import com.example.ollama.service.InvoiceAnalyzerService;
+import com.example.ollama.service.InvoiceSearchService;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -29,6 +30,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class InvoiceController {
 	private final InvoiceAnalyzerService invoiceAnalyzeService;
+	private final InvoiceSearchService invoiceSearchService;
 
 	@PostMapping("/analyze")
 	public InvoiceResponse analyzeInvoice(@RequestParam("file") MultipartFile file)  {
@@ -60,7 +62,7 @@ public class InvoiceController {
 			@RequestParam(required = false) String supplier,
 			@RequestParam(required = false) String city,
 			@RequestParam(required = false, defaultValue = "25") int limit) {
-		return invoiceAnalyzeService.searchInvoices(
+		return invoiceSearchService.searchInvoices(
 						new InvoiceSearchCriteria(
 								q, minAmount, maxAmount, currency, fromDate, toDate, paid, updated, supplier, city, limit))
 				.stream()

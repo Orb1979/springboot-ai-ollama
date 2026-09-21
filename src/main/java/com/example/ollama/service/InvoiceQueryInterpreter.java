@@ -9,6 +9,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
+/**
+ * Turns a natural-language search query into structured invoice filter fields via an LLM.
+ */
 @Log4j2
 @Service
 public class InvoiceQueryInterpreter {

@@ -3,6 +3,9 @@ package com.example.ollama.service;
 import com.example.ollama.dto.InvoiceQueryInterpretation;
 import com.example.ollama.dto.InvoiceSearchCriteria;
 
+/**
+ * Merges UI search criteria with LLM-extracted filters (UI values win when both are set).
+ */
 public final class InvoiceSearchCriteriaMerger {
 	private InvoiceSearchCriteriaMerger() {}
 
