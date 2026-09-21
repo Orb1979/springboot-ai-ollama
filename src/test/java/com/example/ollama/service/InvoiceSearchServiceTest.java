@@ -231,9 +231,8 @@ class InvoiceSearchServiceTest {
 
 	private Invoice sample(Long id, String supplier, BigDecimal amount, String currency, LocalDate invoiceDate) {
 		return new Invoice(
-				id, supplier, "Main Street", "42A", "Amsterdam", "Netherlands", "1012 AB",
-				"INV-001", invoiceDate, amount, currency,
-				Instant.parse("2026-09-15T10:00:00Z"), null, null
+				id, supplier, "Main Street", "42A", "1012 AB", "Amsterdam", "Netherlands", "INV-001", invoiceDate, amount,
+				currency, Instant.parse("2026-09-15T10:00:00Z"), null, null
 		);
 	}
 }
