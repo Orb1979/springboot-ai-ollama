@@ -162,31 +162,28 @@ Unstructured text ──────► Structured JSON
 
 ```
 
-Example just 1 chatclient, with 1 model: \
-application.properties > OllamaChatModel  > ChatClient.Builder > ChatClient
-This gets autoconfigured, no Config classes needed
+
 ```
+** 1 chatclient, with 1 model: 
+application.properties > OllamaChatMode > ChatClient.Builder > ChatClient
+This gets autoconfigured, no Config classes needed
+
 spring.ai.ollama.conversation-model=qwen3.5:9b
 public ChatController(ChatClient.Builder chatClientBuilder) {
      this.chatClient = chatClientBuilder.build();
-}
-```
 
-Multiple chatClients, each with unique model \
-Requires @qualifier for ChatClient and OllamaChatModel \
-advantage: Your business code doesn't care whether about the specific model, it's only set in application properties
-```
+
+** Multiple chatClients, each with unique model
+Requires @qualifier for ChatClient and OllamaChatModel
+advantage: business code doesn't care about the specific model, it's only set in application properties
+
 generalClient ──> qwen3.5:9b
 chatClient ─────> another-model
 visionClient ───> vision-model
-```
 
-its possible to change the model of the chatClient dynamically \
+
+** set chatClient dynamically 
 This is more flexible but means your application code has to decide which model to use.
-```
-┌── qwen3.5:9b
-ChatClient ─────────┼── another-model
-└── vision-model
 
 chatClient
     .prompt()
@@ -200,12 +197,71 @@ chatClient
 
 ```
 
+```
+GET /ai/invoices/search?q=...&minAmount=...&...
+q blank?
+  YES → UI SQL filters only (InvoiceSpecifications)
+       → limit
+       → no LLM, no vectors
+       → return InvoiceResponse[] (no similarityScore)
+  NO  →  1) LLM turns q into JSON fields
+       → 2) Merge with UI SQL filters (UI wins when both set)
+       → 3) Those fields are the hard SQL predicates (InvoiceSpecifications)
+       → similaritySearch(semanticQuery)
+         - Embed q
+         - ask Ask pgvector for the nearest documents (topK up to 100, above the similarity threshold) 
+         - results ranked list of vector documents which look similar
+       → findMatchingByIds(ids, criteria)    
+         - the ids of the similaritySearch + hard sql filters Intersection
+         - so vectors never relax SQL. They only order candidates that still have to satisfy filters.
+       → keep score order, apply limit
+       → if no similarity hits AND hasFilters → findMatching(criteria) fallback
+         (SQL-only with merged criteria, no scores)
+
+
+UI form ──► InvoiceSearchCriteria (ui)
+q text  ──► LLM JSON ──► merge ──► InvoiceSearchCriteria (final)
+                                      │
+                         ┌────────────┴────────────┐
+                         │                         │
+                   hard filters              semanticQuery
+                   (SQL Specs)               (embeddings)
+
+
+
+
+SQL, VS LLM VS EMBEDDING
+
+SQL filters
+What: Exact conditions on DB columns (amount, currency, city LIKE, …).
+Good: Hard must-match rules; 
+fast; predictable. 
+Weak: Synonyms, typos, vague intent, relevance ranking.
+
+LLM (interpret the query text)
+What: Turns natural language into structured fields (+ leftover text).
+Good: Paraphrases (“over 500 euro”, filler words); maps intent to filters. 
+Weak: Can guess wrong; slower/costlier; not exact by itself.
+
+Embeddings / vectors
+What: Similarity search by meaning. 
+Good: Soft ranking; related wording; “closest match” order. 
+Weak: Bad at strict numbers/dates; won’t enforce must-match rules alone.
+
+How they work together (typical)
+LLM understands the sentence → SQL enforces hard rules → vectors rank what’s left.
+
+Rule of thumb
+Need it to be true → SQL
+Need to understand the sentence → LLM
+Need “closest meaning” order → embeddings
+```
 
 Possible improvements:
 
 1
 Tool calling / function calling \
-   Spring AI supports @Tool-annotated methods that the LLM can decide to invoke mid-conversation (e.g. 'look up this supplier in our database' or 'convert this currency'). This is the natural next concept after simple prompt-in/structured-object-out, and it's how most real agentic systems are built.
+Spring AI supports @Tool-annotated methods that the LLM can decide to invoke mid-conversation (e.g. 'look up this supplier in our database' or 'convert this currency'). This is the natural next concept after simple prompt-in/structured-object-out, and it's how most real agentic systems are built.
 
 2
 RAG over invoice search \
