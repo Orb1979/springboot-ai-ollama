@@ -1,6 +1,8 @@
 package com.example.ollama.service;
 
 import com.example.ollama.domain.FileType;
+import com.example.ollama.dto.InvoiceQueryInterpretation;
+import com.example.ollama.dto.InvoiceSearchCriteria;
 import com.example.ollama.dto.InvoiceUpdateRequest;
 import com.example.ollama.entity.Invoice;
 import com.example.ollama.exception.InvoiceAnalyzeException;
@@ -48,6 +50,7 @@ class InvoiceAnalyzerServiceTest {
 	@Mock private InvoiceValidator invoiceValidator;
 	@Mock private InvoiceRepository invoiceRepository;
 	@Mock private InvoiceEmbeddingService invoiceEmbeddingService;
+	@Mock private InvoiceQueryInterpreter invoiceQueryInterpreter;
 	private InvoiceAnalyzerService invoiceAnalyzerService;
 
 	@BeforeEach
@@ -58,8 +61,50 @@ class InvoiceAnalyzerServiceTest {
 				List.of(textExtractor),
 				invoiceValidator,
 				invoiceRepository,
-				invoiceEmbeddingService
+				invoiceEmbeddingService,
+				invoiceQueryInterpreter
 		);
+	}
+
+	@Test
+	void searchInvoices_interpretsQuery_thenMerges_thenDelegates() {
+		var ui = new InvoiceSearchCriteria("invoices from Acme in Amsterdam over 500 euro",
+				null, null, null, null, null, null, null, null, null, 25);
+		var interpretation = new InvoiceQueryInterpretation(
+				"Acme", "Amsterdam", new BigDecimal("500"), null, "EUR",
+				null, null, null, null, "Acme Amsterdam");
+		when(invoiceQueryInterpreter.interpret(ui.semanticQuery())).thenReturn(Optional.of(interpretation));
+
+		var expectedMerged = InvoiceSearchCriteriaMerger.merge(ui, interpretation);
+		when(invoiceEmbeddingService.search(expectedMerged)).thenReturn(List.of());
+
+		invoiceAnalyzerService.searchInvoices(ui);
+
+		verify(invoiceEmbeddingService).search(expectedMerged);
+	}
+
+	@Test
+	void searchInvoices_onInterpretFailure_searchesWithUiCriteria() {
+		var ui = new InvoiceSearchCriteria("acme", null, null, null, null, null, null, null, null, null, 25);
+		when(invoiceQueryInterpreter.interpret("acme")).thenReturn(Optional.empty());
+		when(invoiceEmbeddingService.search(ui)).thenReturn(List.of());
+
+		invoiceAnalyzerService.searchInvoices(ui);
+
+		verify(invoiceQueryInterpreter).interpret("acme");
+		verify(invoiceEmbeddingService).search(ui);
+	}
+
+	@Test
+	void searchInvoices_blankQuery_skipsInterpreter() {
+		var ui = new InvoiceSearchCriteria(null, new BigDecimal("10"), null, "EUR",
+				null, null, null, null, null, null, 25);
+		when(invoiceEmbeddingService.search(ui)).thenReturn(List.of());
+
+		invoiceAnalyzerService.searchInvoices(ui);
+
+		verify(invoiceQueryInterpreter, never()).interpret(any());
+		verify(invoiceEmbeddingService).search(ui);
 	}
 
 	@Test

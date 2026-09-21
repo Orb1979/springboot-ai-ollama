@@ -57,9 +57,12 @@ public class InvoiceController {
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
 			@RequestParam(required = false) Boolean paid,
 			@RequestParam(required = false) Boolean updated,
+			@RequestParam(required = false) String supplier,
+			@RequestParam(required = false) String city,
 			@RequestParam(required = false, defaultValue = "25") int limit) {
 		return invoiceAnalyzeService.searchInvoices(
-						new InvoiceSearchCriteria(q, minAmount, maxAmount, currency, fromDate, toDate, paid, updated, limit))
+						new InvoiceSearchCriteria(
+								q, minAmount, maxAmount, currency, fromDate, toDate, paid, updated, supplier, city, limit))
 				.stream()
 				.map(InvoiceMapper::toResponse)
 				.toList();
