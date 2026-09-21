@@ -68,18 +68,18 @@ public class InvoiceSearchService {
 					.map(InvoiceSearchHit::new)
 					.toList();
 		}
-		return semanticSearch(criteria);
+		return rankBySimilarity(criteria);
 	}
 
 	/**
 	 * When hard filters are present: SQL candidates first, then vector-rank only those ids.
 	 * Otherwise: global vector search, then load matching invoices by id.
 	 */
-	private List<InvoiceSearchHit> semanticSearch(InvoiceSearchCriteria criteria) {
+	private List<InvoiceSearchHit> rankBySimilarity(InvoiceSearchCriteria criteria) {
 		if (criteria.hasFilters()) {
-			return semanticSearchWithinFilters(criteria);
+			return rankWithinSqlMatches(criteria);
 		}
-		return semanticSearchUnfiltered(criteria);
+		return rankGlobally(criteria);
 	}
 
 	/**
@@ -87,7 +87,7 @@ public class InvoiceSearchService {
 	 * (avoids missing filter matches that fall outside the global vector top-K).
 	 * Falls back to SQL order when no vector hits survive the threshold.
 	 */
-	private List<InvoiceSearchHit> semanticSearchWithinFilters(InvoiceSearchCriteria criteria) {
+	private List<InvoiceSearchHit> rankWithinSqlMatches(InvoiceSearchCriteria criteria) {
 		List<Invoice> candidates = invoiceRepository.findMatchingCandidates(criteria);
 		if (candidates.isEmpty()) {
 			return List.of();
@@ -127,7 +127,7 @@ public class InvoiceSearchService {
 	}
 
 	/** Global vector ranking when there are no hard filters. */
-	private List<InvoiceSearchHit> semanticSearchUnfiltered(InvoiceSearchCriteria criteria) {
+	private List<InvoiceSearchHit> rankGlobally(InvoiceSearchCriteria criteria) {
 		List<Document> documents = vectorStore.similaritySearch(
 				SearchRequest.builder()
 						.query(criteria.semanticQuery())
