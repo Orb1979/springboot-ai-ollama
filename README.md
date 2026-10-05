@@ -2,9 +2,9 @@
 
 This project runs an LLM locally or uses openAI model
 
-Spring Boot > Spring AI > <provider> > <model>
-Spring Boot > Spring AI > Ollama > local LLM
-Spring Boot > Spring AI > openai > open ai LLM
+Spring Boot > Spring AI > <provider> > <model> \
+Spring Boot > Spring AI > Ollama > local LLM \
+Spring Boot > Spring AI > openai > open ai LLM 
 
 ```
 # Start Postgres with pgvector (required for semantic invoice search)
@@ -41,15 +41,6 @@ curl http://localhost:8080/ai/chat/test
 curl "http://localhost:8080/ai/invoices/search?q=electrician%20around%20500&currency=EUR"
 ```
 
-Switching embedding providers (Ollama ↔ OpenAI) requires matching
-`app.ai.embedding.*` and `spring.ai.vectorstore.pgvector.dimensions`, then
-recreating/clearing the `vector_store` table so embeddings are rebuilt
-(e.g. nomic-embed-text → 768, text-embedding-3-small → 1536).
-
-Semantic search drops hits below `app.ai.search.similarity-threshold` (cosine
-similarity 0–1; see `application.properties`) and ranks remaining results by
-vector score within the hard-filtered candidate set.
-
 ## Frontend
 
 The React and TypeScript frontend lives in `frontend/` and runs separately
@@ -81,11 +72,8 @@ npm run lint
 npm run build
 ```
 
+# Prompt structure
 ```
-─────────────────────────────────────────
- 1. Prompt structure
-─────────────────────────────────────────
-
 prompt template
         ↓
 Instructions ("extract these fields", rules)
@@ -164,7 +152,7 @@ Unstructured text ──────► Structured JSON
 
 ```
 
-
+# ChatClients / Models
 ```
 ** 1 chatclient, with 1 model: 
 application.properties > OllamaChatMode > ChatClient.Builder > ChatClient
@@ -199,6 +187,7 @@ chatClient
 
 ```
 
+# Search (SQL / LLM / Embeddings)
 ```
 GET /ai/invoices/search?q=...&minAmount=...&...
 q blank?
@@ -261,7 +250,7 @@ Need to understand the sentence → LLM
 Need “closest meaning” order → embeddings
 ```
 
-Possible improvements:
+# Possible improvements:
 
 1
 Tool calling / function calling \
